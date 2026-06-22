@@ -1,0 +1,11 @@
+{
+  "name": "deepbase",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "ahooks": "^3.9.6",
+    "prettier": "^3.8.1"
+  }
+}

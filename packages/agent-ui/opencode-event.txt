@@ -1,0 +1,102 @@
+data: {"type":"server.connected","properties":{}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
+data: {"type":"session.created","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"ses_1355ee779ffe4Qb7veUmqv1CYg","slug":"misty-star","version":"1.14.19","projectID":"cebdbb91bd5ab3f21e5506f1e717311b199aa2f2","directory":"/home/coder/Documents/mine_repos/deepbase","title":"你好","time":{"created":1781516015750,"updated":1781516015750}}}}
+
+data: {"type":"session.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"ses_1355ee779ffe4Qb7veUmqv1CYg","slug":"misty-star","version":"1.14.19","projectID":"cebdbb91bd5ab3f21e5506f1e717311b199aa2f2","directory":"/home/coder/Documents/mine_repos/deepbase","title":"你好","time":{"created":1781516015750,"updated":1781516015750}}}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"msg_ecaa118e4001VT3O5JLbq2it7H","role":"user","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","time":{"created":1781516015844},"agent":"build","model":{"providerID":"psci","modelID":"deepseek-v4-flash"}}}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"type":"text","text":"你好","messageID":"msg_ecaa118e4001VT3O5JLbq2it7H","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","id":"prt_ecaa118e5001WyvbUY4az0SMEX"},"time":1781516015847}}
+
+data: {"type":"session.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"ses_1355ee779ffe4Qb7veUmqv1CYg","slug":"misty-star","projectID":"cebdbb91bd5ab3f21e5506f1e717311b199aa2f2","directory":"/home/coder/Documents/mine_repos/deepbase","title":"你好","version":"1.14.19","time":{"created":1781516015750,"updated":1781516015848}}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","status":{"type":"busy"}}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"msg_ecaa118f6001khOqzeh3x5D0tu","parentID":"msg_ecaa118e4001VT3O5JLbq2it7H","role":"assistant","mode":"build","agent":"build","path":{"cwd":"/home/coder/Documents/mine_repos/deepbase","root":"/home/coder/Documents/mine_repos/deepbase"},"cost":0,"tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"modelID":"deepseek-v4-flash","providerID":"psci","time":{"created":1781516015862},"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg"}}}
+
+data: {"type":"session.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"ses_1355ee779ffe4Qb7veUmqv1CYg","slug":"misty-star","projectID":"cebdbb91bd5ab3f21e5506f1e717311b199aa2f2","directory":"/home/coder/Documents/mine_repos/deepbase","title":"你好","version":"1.14.19","summary":{"additions":0,"deletions":0,"files":0},"time":{"created":1781516015750,"updated":1781516015986}}}}
+
+data: {"type":"session.diff","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","diff":[]}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"role":"user","time":{"created":1781516015844},"agent":"build","model":{"providerID":"psci","modelID":"deepseek-v4-flash"},"id":"msg_ecaa118e4001VT3O5JLbq2it7H","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","summary":{"diffs":[]}}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","status":{"type":"busy"}}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa11efd001hdQmFoffWNH7l8","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","snapshot":"fee9f5c70c74fceb940e0a1f570ef4e3598f40ff","type":"step-start"},"time":1781516017405}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa11f02001H4dLolkvtuEyq8","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","type":"reasoning","text":"","time":{"start":1781516017410}},"time":1781516017410}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":"The"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" user is"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" greeting"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" me in"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" Chinese (\""}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":"Hello"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":"\"). I"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" should respond"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" in Chinese"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" as well"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":", with"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" a brief"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":" greeting"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f02001H4dLolkvtuEyq8","field":"text","delta":"."}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa11f02001H4dLolkvtuEyq8","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","type":"reasoning","text":"The user is greeting me in Chinese (\"Hello\"). I should respond in Chinese as well, with a brief greeting.","time":{"start":1781516017410,"end":1781516017537}},"time":1781516017537}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa11f84001cgI7XPU2qiVsSm","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","type":"text","text":"","time":{"start":1781516017540}},"time":1781516017540}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f84001cgI7XPU2qiVsSm","field":"text","delta":"你好！"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f84001cgI7XPU2qiVsSm","field":"text","delta":"有什么"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f84001cgI7XPU2qiVsSm","field":"text","delta":"我可以帮"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f84001cgI7XPU2qiVsSm","field":"text","delta":"你的吗"}}
+
+data: {"type":"message.part.delta","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","partID":"prt_ecaa11f84001cgI7XPU2qiVsSm","field":"text","delta":"？"}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa11f84001cgI7XPU2qiVsSm","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","type":"text","text":"你好！有什么我可以帮你的吗？","time":{"start":1781516017540,"end":1781516017662}},"time":1781516017662}}
+
+data: {"type":"message.part.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","part":{"id":"prt_ecaa12008001rkBYVhilc4oNfB","reason":"stop","snapshot":"fee9f5c70c74fceb940e0a1f570ef4e3598f40ff","messageID":"msg_ecaa118f6001khOqzeh3x5D0tu","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","type":"step-finish","tokens":{"total":23646,"input":61,"output":10,"reasoning":23,"cache":{"write":0,"read":23552}},"cost":0},"time":1781516017751}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"msg_ecaa118f6001khOqzeh3x5D0tu","parentID":"msg_ecaa118e4001VT3O5JLbq2it7H","role":"assistant","mode":"build","agent":"build","path":{"cwd":"/home/coder/Documents/mine_repos/deepbase","root":"/home/coder/Documents/mine_repos/deepbase"},"cost":0,"tokens":{"total":23646,"input":61,"output":10,"reasoning":23,"cache":{"write":0,"read":23552}},"modelID":"deepseek-v4-flash","providerID":"psci","time":{"created":1781516015862},"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","finish":"stop"}}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"msg_ecaa118f6001khOqzeh3x5D0tu","parentID":"msg_ecaa118e4001VT3O5JLbq2it7H","role":"assistant","mode":"build","agent":"build","path":{"cwd":"/home/coder/Documents/mine_repos/deepbase","root":"/home/coder/Documents/mine_repos/deepbase"},"cost":0,"tokens":{"total":23646,"input":61,"output":10,"reasoning":23,"cache":{"write":0,"read":23552}},"modelID":"deepseek-v4-flash","providerID":"psci","time":{"created":1781516015862,"completed":1781516017822},"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","finish":"stop"}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","status":{"type":"busy"}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","status":{"type":"idle"}}}
+
+data: {"type":"session.idle","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg"}}
+
+data: {"type":"session.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"id":"ses_1355ee779ffe4Qb7veUmqv1CYg","slug":"misty-star","projectID":"cebdbb91bd5ab3f21e5506f1e717311b199aa2f2","directory":"/home/coder/Documents/mine_repos/deepbase","title":"你好","version":"1.14.19","summary":{"additions":0,"deletions":0,"files":0},"time":{"created":1781516015750,"updated":1781516017865}}}}
+
+data: {"type":"session.diff","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","diff":[]}}
+
+data: {"type":"message.updated","properties":{"sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg","info":{"role":"user","time":{"created":1781516015844},"agent":"build","model":{"providerID":"psci","modelID":"deepseek-v4-flash"},"summary":{"diffs":[]},"id":"msg_ecaa118e4001VT3O5JLbq2it7H","sessionID":"ses_1355ee779ffe4Qb7veUmqv1CYg"}}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
+data: {"type":"server.heartbeat","properties":{}}
+
