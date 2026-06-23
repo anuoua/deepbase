@@ -1,17 +1,19 @@
-import { Form, Modal, Select, Typography } from "antd";
-import type { Provider } from "@opencode-ai/sdk";
+import { Form, Modal, Select, Spin, Typography } from "antd";
+import { useOpencode, selectors } from "../../../lib/opencode-store";
+import type { OpencodeStore } from "../../../lib/opencode-store";
 
 export function ConfigModal({
+  store,
   open,
-  loading,
-  providers,
   onClose,
 }: {
+  store: OpencodeStore;
   open: boolean;
-  loading: boolean;
-  providers: Provider[];
   onClose: () => void;
 }) {
+  const providers = useOpencode(store, selectors.providers);
+  const loading = useOpencode(store, selectors.providersLoading);
+
   return (
     <Modal
       title="配置"
@@ -21,7 +23,9 @@ export function ConfigModal({
       width={500}
     >
       {loading ? (
-        <Typography.Text>加载中...</Typography.Text>
+        <Spin>
+          <Typography.Text>加载中...</Typography.Text>
+        </Spin>
       ) : providers.length > 0 ? (
         <Form layout="vertical">
           <Form.Item label="可用 Provider">

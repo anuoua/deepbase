@@ -1,6 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { OpencodeStore } from "./store";
-import type { ClientSnapshot } from "./types";
+import type { Bubble, ClientSnapshot } from "./types";
+
+const EMPTY_MESSAGES: readonly Bubble[] = Object.freeze([]);
 
 export function useOpencode<T>(
   store: OpencodeStore,
@@ -23,8 +25,14 @@ export const selectors = {
   sessions: (s: ClientSnapshot) => s.sessions,
   messages: (s: ClientSnapshot) => s.messages,
   childSessions: (s: ClientSnapshot) => s.childSessions,
+  childMessages: (sessionID: string) => (s: ClientSnapshot) =>
+    s.childMessages.get(sessionID) ?? EMPTY_MESSAGES,
+  isChildLoading: (sessionID: string) => (s: ClientSnapshot) =>
+    s.childLoading.has(sessionID),
   requesting: (s: ClientSnapshot) => s.requesting,
   streamPhase: (s: ClientSnapshot) => s.streamPhase,
   revert: (s: ClientSnapshot) => s.revert,
+  providers: (s: ClientSnapshot) => s.providers,
+  providersLoading: (s: ClientSnapshot) => s.providersLoading,
   error: (s: ClientSnapshot) => s.error,
 } as const;

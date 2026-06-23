@@ -1,8 +1,16 @@
-import type { Session, ToolPart } from "@opencode-ai/sdk";
+import type { Provider, Session, ToolPart } from "@opencode-ai/sdk";
 
 export type BubbleStatus = "pending" | "streaming" | "done" | "error";
 
 export type AssistantPhase = "thinking" | "answering";
+
+export interface SubtaskRef {
+  readonly id: string;
+  readonly agent: string;
+  readonly description: string;
+  readonly prompt: string;
+  readonly childSessionID?: string;
+}
 
 export interface UserBubble {
   readonly kind: "user";
@@ -22,6 +30,7 @@ export interface AssistantBubble {
   readonly text: string;
   readonly thinking: string;
   readonly toolCalls: readonly ToolPart[];
+  readonly subtasks: readonly SubtaskRef[];
   readonly error?: string;
 }
 
@@ -44,9 +53,13 @@ export interface ClientSnapshot {
   readonly sessions: readonly SessionRef[];
   readonly messages: readonly Bubble[];
   readonly childSessions: readonly Session[];
+  readonly childMessages: ReadonlyMap<string, readonly Bubble[]>;
+  readonly childLoading: ReadonlySet<string>;
   readonly requesting: boolean;
   readonly streamPhase: StreamPhase;
   readonly revert: RevertStatus;
+  readonly providers: readonly Provider[];
+  readonly providersLoading: boolean;
   readonly error?: OpencodeError;
 }
 

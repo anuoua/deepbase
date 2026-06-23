@@ -1,8 +1,10 @@
-import { Collapse, Steps } from "antd";
-import { useState, useMemo } from "react";
+import { Collapse, Steps, Tag } from "antd";
+import { useMemo, useState } from "react";
 import type { ToolPart } from "@opencode-ai/sdk";
+import { useDesignTokens } from "../hooks/useDesignTokens";
 
 export function ToolCalls({ toolCalls }: { toolCalls: readonly ToolPart[] }) {
+  const t = useDesignTokens();
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
 
   const stepsItems = useMemo(
@@ -39,8 +41,18 @@ export function ToolCalls({ toolCalls }: { toolCalls: readonly ToolPart[] }) {
     [toolCalls],
   );
 
+  const allDone = stepsItems.every((s) => s.status === "finish");
+  const hasError = stepsItems.some((s) => s.status === "error");
+  const statusTag = allDone ? (
+    <Tag color="success">完成</Tag>
+  ) : hasError ? (
+    <Tag color="error">失败</Tag>
+  ) : (
+    <Tag color="processing">进行中</Tag>
+  );
+
   return (
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: t.space.sm }}>
       <Collapse
         size="small"
         activeKey={activeKeys}
@@ -48,12 +60,11 @@ export function ToolCalls({ toolCalls }: { toolCalls: readonly ToolPart[] }) {
         items={[
           {
             key: "tool-calls",
-            label: `工具调用 (${toolCalls.length})`,
-            extra: stepsItems.every((s) => s.status === "finish")
-              ? "✅ 完成"
-              : stepsItems.some((s) => s.status === "error")
-                ? "❌ 失败"
-                : "⏳ 进行中",
+            label: (
+              <span>
+                工具调用 ({toolCalls.length}) {statusTag}
+              </span>
+            ),
             children: (
               <div>
                 <Steps
@@ -68,13 +79,13 @@ export function ToolCalls({ toolCalls }: { toolCalls: readonly ToolPart[] }) {
                     <pre
                       key={key}
                       style={{
-                        margin: "4px 0 0 0",
+                        margin: `${t.space.xs}px 0 0 0`,
                         whiteSpace: "pre-wrap",
                         maxHeight: 300,
                         overflow: "auto",
-                        background: "#f6f8fa",
-                        padding: 8,
-                        borderRadius: 4,
+                        background: t.color.bgSubtle,
+                        padding: t.space.sm,
+                        borderRadius: t.radius.sm,
                       }}
                     >
                       {text}

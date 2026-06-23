@@ -1,5 +1,5 @@
 import type { Message, Part, ToolPart } from "@opencode-ai/sdk";
-import type { AssistantBubble, Bubble, UserBubble } from "./types";
+import type { AssistantBubble, Bubble, SubtaskRef, UserBubble } from "./types";
 
 export interface MessageWithParts {
   readonly info: Message;
@@ -20,6 +20,18 @@ const isReasoning = (p: Part): p is Part & { type: "reasoning"; text: string } =
   p.type === "reasoning";
 
 const isTool = (p: Part): p is ToolPart => p.type === "tool";
+
+interface SubtaskPart {
+  readonly id: string;
+  readonly sessionID: string;
+  readonly messageID: string;
+  readonly type: "subtask";
+  readonly agent: string;
+  readonly description: string;
+  readonly prompt: string;
+}
+
+const isSubtask = (p: Part): p is Part & SubtaskPart => p.type === "subtask";
 
 const textOf = (part: (Part & { text?: string }) | undefined): string =>
   part?.text ?? "";
@@ -45,7 +57,16 @@ export function assistantBubbleFromMessage(
   const textPart = msg.parts.find(isText);
   const reasoningPart = msg.parts.find(isReasoning);
   const toolParts = msg.parts.filter(isTool);
-  if (!textPart && !reasoningPart && toolParts.length === 0) return null;
+  const subtaskParts = msg.parts.filter(isSubtask);
+  if (!textPart && !reasoningPart && toolParts.length === 0 && subtaskParts.length === 0)
+    return null;
+
+  const subtasks: SubtaskRef[] = subtaskParts.map((st) => ({
+    id: st.id,
+    agent: st.agent,
+    description: st.description,
+    prompt: st.prompt,
+  }));
 
   return {
     kind: "assistant",
@@ -57,6 +78,7 @@ export function assistantBubbleFromMessage(
     text: textOf(textPart),
     thinking: textOf(reasoningPart),
     toolCalls: toolParts,
+    subtasks,
   };
 }
 
@@ -94,5 +116,6 @@ export function createAssistantBubbleLocal(
     text: "",
     thinking: "",
     toolCalls: [],
+    subtasks: [],
   };
 }

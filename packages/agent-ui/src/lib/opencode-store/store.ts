@@ -1,4 +1,4 @@
-import type { Event, OpencodeClient, Session } from "@opencode-ai/sdk";
+import type { Event, OpencodeClient, Provider, Session } from "@opencode-ai/sdk";
 import { createOpencodeClient } from "@opencode-ai/sdk";
 import {
   createAssistantBubbleLocal,
@@ -21,6 +21,7 @@ import type {
   RevertStatus,
   SessionRef,
   StreamPhase,
+  SubtaskRef,
 } from "./types";
 
 type Listener = () => void;
@@ -30,12 +31,16 @@ interface StoreState {
   sessions: SessionRef[];
   baseMessages: Bubble[];
   childSessions: Session[];
+  childMessages: Map<string, readonly Bubble[]>;
+  childLoading: Set<string>;
   requesting: boolean;
   streaming: StreamingState | null;
   pendingUserBubble: Bubble | null;
   revert: RevertStatus;
   originalFullLength: number;
   error: OpencodeError | undefined;
+  providers: Provider[];
+  providersLoading: boolean;
 }
 
 const emptyRevert: RevertStatus = { canRestore: false, hiddenCount: 0 };
@@ -45,12 +50,16 @@ const initialState: StoreState = {
   sessions: [],
   baseMessages: [],
   childSessions: [],
+  childMessages: new Map(),
+  childLoading: new Set(),
   requesting: false,
   streaming: null,
   pendingUserBubble: null,
   revert: emptyRevert,
   originalFullLength: 0,
   error: undefined,
+  providers: [],
+  providersLoading: false,
 };
 
 function toSessionRef(s: Session): SessionRef {
@@ -82,7 +91,28 @@ function deriveAssistantBubble(stream: AssistantStream, idle: boolean): Bubble {
     text: stream.text,
     thinking: stream.thinking,
     toolCalls: stream.toolCalls.map((tc) => ({ ...tc, state: { ...tc.state } })),
+    subtasks: [],
   };
+}
+
+function enrichSubtasks(
+  bubbles: readonly Bubble[],
+  childSessions: readonly Session[],
+): readonly Bubble[] {
+  if (childSessions.length === 0) return bubbles;
+  const sortedChildren = [...childSessions].sort(
+    (a, b) => a.time.created - b.time.created,
+  );
+  let childIdx = 0;
+  return bubbles.map((b) => {
+    if (b.kind !== "assistant" || b.subtasks.length === 0) return b;
+    const subtasks: SubtaskRef[] = b.subtasks.map((st) => {
+      const child = childIdx < sortedChildren.length ? sortedChildren[childIdx] : undefined;
+      childIdx++;
+      return child ? { ...st, childSessionID: child.id } : st;
+    });
+    return { ...b, subtasks };
+  });
 }
 
 function applyRevert(
@@ -113,14 +143,12 @@ function applyRevert(
 
 export class OpencodeStore {
   private readonly sdk: OpencodeClient;
-  private readonly directory: string | undefined;
   private state: StoreState = { ...initialState };
   private listeners = new Set<Listener>();
   private abortController: AbortController | null = null;
   private snapshotCache: ClientSnapshot | null = null;
 
   constructor(config: OpencodeStoreConfig = {}) {
-    this.directory = config.directory;
     this.sdk = createOpencodeClient({
       baseUrl: config.baseUrl ?? "/opencode-api",
       ...(config.directory ? { directory: config.directory } : {}),
@@ -163,16 +191,21 @@ export class OpencodeStore {
       sessions: this.state.sessions,
       messages,
       childSessions: this.state.childSessions,
+      childMessages: this.state.childMessages,
+      childLoading: this.state.childLoading,
       requesting: this.state.requesting,
       streamPhase: this.derivePhase(),
       revert: this.state.revert,
+      providers: this.state.providers,
+      providersLoading: this.state.providersLoading,
       ...(this.state.error ? { error: this.state.error } : {}),
     };
   }
 
-  private deriveMessages(): Bubble[] {
-    const { baseMessages, streaming, pendingUserBubble } = this.state;
-    if (!streaming) return baseMessages;
+  private deriveMessages(): readonly Bubble[] {
+    const { baseMessages, streaming, pendingUserBubble, childSessions } = this.state;
+    const enriched = enrichSubtasks(baseMessages, childSessions);
+    if (!streaming) return enriched;
 
     const user: Bubble | null = pendingUserBubble
       ? streaming.userMessageID
@@ -182,15 +215,15 @@ export class OpencodeStore {
 
     if (streaming.assistants.length === 0) {
       const placeholder = createAssistantBubbleLocal(Date.now(), "stream-placeholder");
-      return user ? [...baseMessages, user, placeholder] : [...baseMessages, placeholder];
+      return user ? [...enriched, user, placeholder] : [...enriched, placeholder];
     }
 
     const assistants = streaming.assistants.map((s) =>
       deriveAssistantBubble(s, streaming.idle),
     );
     return user
-      ? [...baseMessages, user, ...assistants]
-      : [...baseMessages, ...assistants];
+      ? [...enriched, user, ...assistants]
+      : [...enriched, ...assistants];
   }
 
   private derivePhase(): StreamPhase {
@@ -215,6 +248,12 @@ export class OpencodeStore {
             ? new OpencodeError("unknown", err.message, err)
             : new OpencodeError("unknown", String(err)),
     };
+    this.commit();
+  }
+
+  clearError(): void {
+    if (!this.state.error) return;
+    this.state = { ...this.state, error: undefined };
     this.commit();
   }
 
@@ -272,6 +311,8 @@ export class OpencodeStore {
           sessionID: undefined,
           baseMessages: [],
           childSessions: [],
+          childMessages: new Map(),
+          childLoading: new Set(),
           revert: emptyRevert,
           originalFullLength: 0,
           streaming: null,
@@ -312,6 +353,8 @@ export class OpencodeStore {
       pendingUserBubble: null,
       revert: emptyRevert,
       originalFullLength: 0,
+      childMessages: new Map(),
+      childLoading: new Set(),
     };
     this.commit();
 
@@ -390,6 +433,7 @@ export class OpencodeStore {
             text: `请求失败: ${err instanceof Error ? err.message : String(err)}`,
             thinking: "",
             toolCalls: [],
+            subtasks: [],
           },
         ],
       };
@@ -478,10 +522,54 @@ export class OpencodeStore {
     }
   }
 
-  async loadChildMessages(sessionID: string): Promise<Bubble[]> {
+  async loadChildMessages(sessionID: string): Promise<readonly Bubble[]> {
     const r = await this.sdk.session.messages({ path: { id: sessionID } });
     if (r.error) throw r.error;
     return messagesToBubbles((r.data ?? []) as readonly MessageWithParts[]);
+  }
+
+  ensureChildMessages(sessionID: string): void {
+    if (this.state.childMessages.has(sessionID)) return;
+    if (this.state.childLoading.has(sessionID)) return;
+    this.state = {
+      ...this.state,
+      childLoading: new Set(this.state.childLoading).add(sessionID),
+    };
+    this.commit();
+    void this.loadChildMessages(sessionID)
+      .then((msgs) => {
+        const childMessages = new Map(this.state.childMessages);
+        childMessages.set(sessionID, msgs);
+        const childLoading = new Set(this.state.childLoading);
+        childLoading.delete(sessionID);
+        this.state = { ...this.state, childMessages, childLoading };
+        this.commit();
+      })
+      .catch((err) => {
+        const childLoading = new Set(this.state.childLoading);
+        childLoading.delete(sessionID);
+        this.state = { ...this.state, childLoading };
+        this.setError(err);
+      });
+  }
+
+  async loadProviders(): Promise<void> {
+    if (this.state.providersLoading) return;
+    this.state = { ...this.state, providersLoading: true };
+    this.commit();
+    try {
+      const r = await this.sdk.config.providers();
+      if (r.error) throw r.error;
+      this.state = {
+        ...this.state,
+        providers: r.data?.providers ?? [],
+        providersLoading: false,
+      };
+      this.commit();
+    } catch (err) {
+      this.state = { ...this.state, providersLoading: false };
+      this.setError(err);
+    }
   }
 
   private startPump(): void {

@@ -1,4 +1,4 @@
-import { App as AntdApp, Button, ConfigProvider, theme } from "antd";
+import { App as AntdApp, ConfigProvider, theme } from "antd";
 import { StyleProvider } from "@ant-design/cssinjs";
 import { App } from "./App";
 

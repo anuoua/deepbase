@@ -1,14 +1,22 @@
 import ReactMarkdown from "react-markdown";
-import { Avatar, Card, Collapse, Spin, Typography } from "antd";
+import { Avatar, Card, Collapse, Spin, Tag, Typography } from "antd";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { ToolCalls } from "./ToolCalls";
 import type { AssistantBubble as AssistantBubbleData } from "../../../lib/opencode-store";
+import { useDesignTokens } from "../hooks/useDesignTokens";
 
-export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
+export function AssistantBubble({
+  item,
+  onSubtaskClick,
+}: {
+  item: AssistantBubbleData;
+  onSubtaskClick?: (sessionID: string) => void;
+}) {
+  const t = useDesignTokens();
   const streamActive = item.status === "streaming" || item.status === "pending";
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: t.space.lg }}>
       {item.thinking ? (
         <Collapse
           size="small"
@@ -20,7 +28,7 @@ export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
                 <span>
                   思考过程
                   {streamActive && item.phase === "thinking" ? (
-                    <Spin size="small" style={{ marginLeft: 8 }} />
+                    <Spin size="small" style={{ marginLeft: t.space.sm }} />
                   ) : null}
                 </span>
               ),
@@ -39,10 +47,42 @@ export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
 
       {item.toolCalls.length > 0 ? <ToolCalls toolCalls={item.toolCalls} /> : null}
 
+      {item.subtasks.length > 0 ? (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: t.space.xs,
+            marginTop: t.space.sm,
+          }}
+        >
+          {item.subtasks.map((st) =>
+            st.childSessionID ? (
+              <Tag
+                key={st.id}
+                color="processing"
+                style={{ cursor: "pointer" }}
+                onClick={() => onSubtaskClick?.(st.childSessionID!)}
+              >
+                🤖 {st.agent}: {st.description}
+              </Tag>
+            ) : (
+              <Tag key={st.id} color="default">
+                🤖 {st.agent}: {st.description}
+              </Tag>
+            ),
+          )}
+        </div>
+      ) : null}
+
       {item.text ? (
-        <div style={{ display: "flex", marginTop: 16 }}>
+        <div style={{ display: "flex", marginTop: t.space.lg }}>
           <Avatar
-            style={{ background: "#f0f0f0", marginRight: 8, flexShrink: 0 }}
+            style={{
+              background: t.color.bgSubtle,
+              marginRight: t.space.sm,
+              flexShrink: 0,
+            }}
           >
             🤖
           </Avatar>
@@ -50,10 +90,10 @@ export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
             size="small"
             style={{
               flex: 1,
-              border: "1px solid #f0f0f0",
+              border: `1px solid ${t.color.border}`,
               opacity: item.status === "pending" ? 0.7 : 1,
             }}
-            styles={{ body: { padding: "8px 12px" } }}
+            styles={{ body: { padding: `${t.space.sm}px ${t.space.md}px` } }}
           >
             {streamActive && !item.text ? (
               <Spin />
@@ -69,9 +109,9 @@ export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
                           {...rest}
                           className={className}
                           style={{
-                            background: "#f0f0f0",
-                            padding: "2px 4px",
-                            borderRadius: 3,
+                            background: t.color.bgSubtle,
+                            padding: `2px ${t.space.xs}px`,
+                            borderRadius: t.radius.xs,
                             fontSize: "0.9em",
                           }}
                         >
@@ -88,16 +128,23 @@ export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
           </Card>
         </div>
       ) : item.status === "pending" ? (
-        <div style={{ display: "flex", marginTop: 16 }}>
+        <div style={{ display: "flex", marginTop: t.space.lg }}>
           <Avatar
-            style={{ background: "#f0f0f0", marginRight: 8, flexShrink: 0 }}
+            style={{
+              background: t.color.bgSubtle,
+              marginRight: t.space.sm,
+              flexShrink: 0,
+            }}
           >
             🤖
           </Avatar>
           <Card
             size="small"
-            style={{ flex: 1, border: "1px solid #f0f0f0" }}
-            styles={{ body: { padding: "8px 12px" } }}
+            style={{
+              flex: 1,
+              border: `1px solid ${t.color.border}`,
+            }}
+            styles={{ body: { padding: `${t.space.sm}px ${t.space.md}px` } }}
           >
             <Spin />
           </Card>

@@ -7,6 +7,7 @@ export type {
   Bubble,
   UserBubble,
   AssistantBubble,
+  SubtaskRef,
   BubbleStatus,
   AssistantPhase,
   ClientSnapshot,
