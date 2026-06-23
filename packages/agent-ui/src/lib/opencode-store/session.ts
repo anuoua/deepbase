@@ -217,13 +217,28 @@ export class Session {
         };
         this.commit();
         void this.reloadAfterIdle();
+      } else if (this.state.loading) {
+        void this.load();
       }
       return;
     }
 
-    if (!this.state.streaming) return;
+    if (!this.state.streaming) {
+      const isStreamingEvent =
+        event.type === "message.updated" ||
+        event.type === "message.part.updated" ||
+        (event as { type: string }).type === "message.part.delta";
+      if (!isStreamingEvent) return;
+      this.state = {
+        ...this.state,
+        loading: false,
+        streaming: { ...initialStreamingState },
+      };
+    }
 
     const prev = this.state.streaming;
+    if (!prev) return;
+
     const next = reduce(prev, event as StreamEvent);
     if (next === prev) return;
 

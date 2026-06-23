@@ -257,6 +257,10 @@ export class SessionManager {
       if (info.parentID) {
         const parent = this.registry.get(info.parentID);
         parent?.handleChildCreated(info);
+        if (!this.registry.has(info.id)) {
+          const child = new Session(info.id, this.sdk);
+          this.registry.set(info.id, child);
+        }
       }
       return;
     }
