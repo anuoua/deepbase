@@ -1,11 +1,27 @@
 import type { Event, Part, ToolPart } from "@opencode-ai/sdk";
 
+export interface PartDeltaProperties {
+  sessionID: string;
+  messageID: string;
+  partID: string;
+  field: string;
+  delta: string;
+}
+
+export type PartDeltaEvent = {
+  type: "message.part.delta";
+  properties: PartDeltaProperties;
+};
+
+export type StreamEvent = Event | PartDeltaEvent;
+
 export interface AssistantStream {
   readonly messageID: string;
   readonly text: string;
   readonly thinking: string;
   readonly toolCalls: readonly ToolPart[];
   readonly stepFinished: boolean;
+  readonly partTypes: ReadonlyMap<string, string>;
 }
 
 export interface StreamingState {
@@ -41,25 +57,23 @@ function patchAssistant(
   return { ...state, assistants };
 }
 
-function handlePartUpdated(
-  state: StreamingState,
-  part: Part,
-  delta: string | undefined,
-): StreamingState {
+function handlePartUpdated(state: StreamingState, part: Part): StreamingState {
   const messageID = part.messageID;
 
   if (part.type === "text") {
-    return patchAssistant(state, messageID, (prev) => ({
-      ...prev,
-      text: delta !== undefined ? prev.text + delta : part.text,
-    }));
+    return patchAssistant(state, messageID, (prev) => {
+      const partTypes = new Map(prev.partTypes);
+      partTypes.set(part.id, "text");
+      return { ...prev, partTypes, text: part.text };
+    });
   }
 
   if (part.type === "reasoning") {
-    return patchAssistant(state, messageID, (prev) => ({
-      ...prev,
-      thinking: delta !== undefined ? prev.thinking + delta : part.text,
-    }));
+    return patchAssistant(state, messageID, (prev) => {
+      const partTypes = new Map(prev.partTypes);
+      partTypes.set(part.id, "reasoning");
+      return { ...prev, partTypes, thinking: part.text };
+    });
   }
 
   if (part.type === "tool") {
@@ -84,7 +98,26 @@ function handlePartUpdated(
   return state;
 }
 
-export function reduce(state: StreamingState, event: Event): StreamingState {
+function handlePartDelta(
+  state: StreamingState,
+  props: PartDeltaProperties,
+): StreamingState {
+  return patchAssistant(state, props.messageID, (prev) => {
+    const partType = prev.partTypes.get(props.partID);
+    if (partType === "reasoning") {
+      return { ...prev, thinking: prev.thinking + props.delta };
+    }
+    if (partType === "text") {
+      return { ...prev, text: prev.text + props.delta };
+    }
+    return prev;
+  });
+}
+
+export function reduce(
+  state: StreamingState,
+  event: StreamEvent,
+): StreamingState {
   switch (event.type) {
     case "message.updated": {
       const info = event.properties.info;
@@ -92,7 +125,9 @@ export function reduce(state: StreamingState, event: Event): StreamingState {
         return { ...state, userMessageID: info.id };
       }
       if (info.role === "assistant") {
-        const exists = state.assistants.some((a) => a.messageID === info.id);
+        const exists = state.assistants.some(
+          (a) => a.messageID === info.id,
+        );
         if (!exists) {
           return {
             ...state,
@@ -104,6 +139,7 @@ export function reduce(state: StreamingState, event: Event): StreamingState {
                 thinking: "",
                 toolCalls: [],
                 stepFinished: false,
+                partTypes: new Map(),
               },
             ],
           };
@@ -113,10 +149,13 @@ export function reduce(state: StreamingState, event: Event): StreamingState {
     }
 
     case "message.part.updated": {
-      return handlePartUpdated(
+      return handlePartUpdated(state, event.properties.part);
+    }
+
+    case "message.part.delta": {
+      return handlePartDelta(
         state,
-        event.properties.part,
-        event.properties.delta,
+        (event as PartDeltaEvent).properties,
       );
     }
 

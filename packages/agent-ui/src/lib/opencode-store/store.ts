@@ -11,6 +11,7 @@ import {
   reduce,
   type AssistantStream,
   type StreamingState,
+  type StreamEvent,
 } from "./streaming";
 import { OpencodeError } from "./types";
 import type {
@@ -544,7 +545,7 @@ export class OpencodeStore {
     if (!this.state.streaming) return;
 
     const prev = this.state.streaming;
-    const next = reduce(prev, event);
+    const next = reduce(prev, event as StreamEvent);
     if (next === prev) return;
 
     if (next.idle && !prev.idle) {
