@@ -1,48 +1,54 @@
 import React from "react";
-import {
-  ArrowLeftOutlined,
-  LaptopOutlined,
-  NotificationOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { LayoutOutlined, TableOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Breadcrumb, Layout, Menu, theme } from "antd";
-import { useApp } from "./hooks/useApp";
+import { Breadcrumb, Button, Layout, Menu } from "antd";
+import { SearchTable } from "./pages/SearchTable";
+import { GridEditor } from "./pages/GridEditor";
+import { useState } from "react";
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content } = Layout;
 
 const items1: MenuProps["items"] = ["1", "2", "3"].map((key) => ({
   key,
   label: `nav ${key}`,
 }));
 
-const items2: MenuProps["items"] = [
-  UserOutlined,
-  LaptopOutlined,
-  NotificationOutlined,
-].map((icon, index) => {
-  const key = String(index + 1);
-
-  return {
-    key: `sub${key}`,
-    icon: React.createElement(icon),
-    label: `subnav ${key}`,
-    children: Array.from({ length: 4 }).map((_, j) => {
-      const subKey = index * 4 + j + 1;
-      return {
-        key: subKey,
-        label: `option${subKey}`,
-      };
-    }),
-  };
-});
-
 export const App: React.FC = () => {
-  const {
-    token: { colorBgContainer, borderRadiusLG, colorBorder },
-  } = theme.useToken();
+  const [currentPage, setCurrentPage] = useState<string>("3");
 
-  const { message } = useApp();
+  const pageMap: Record<string, React.ReactNode> = {
+    "1": <div style={{ padding: 24 }}>Dashboard</div>,
+    "2": <SearchTable />,
+    "3": (
+      <GridEditor>
+        <div
+          style={{
+            gridArea: "header",
+          }}
+        >
+          header
+        </div>
+        <div
+          style={{
+            gridArea: "sidebar",
+          }}
+        >
+          <Menu
+            items={[
+              {
+                label: "abc",
+                key: "abc",
+              },
+              {
+                label: "ccc",
+                key: "ccc",
+              },
+            ]}
+          ></Menu>
+        </div>
+      </GridEditor>
+    ),
+  };
 
   return (
     <div
@@ -69,7 +75,7 @@ export const App: React.FC = () => {
           styles={{
             root: {},
           }}
-          defaultSelectedKeys={["2"]}
+          defaultSelectedKeys={["3"]}
           items={items1}
           style={{ flex: 1, minWidth: 0, margin: 0 }}
         />
@@ -83,26 +89,71 @@ export const App: React.FC = () => {
       >
         <Menu
           mode="inline"
-          defaultSelectedKeys={["1"]}
-          defaultOpenKeys={["sub1"]}
+          defaultSelectedKeys={["3"]}
+          defaultOpenKeys={["sub2"]}
           style={{ height: "100%", borderRight: "none" }}
-          items={items2}
+          items={[
+            {
+              key: "sub1",
+              icon: React.createElement(TableOutlined),
+              label: "数据表格",
+              children: [
+                { key: "1", label: "Dashboard" },
+                { key: "2", label: "SearchTable" },
+              ],
+            },
+            {
+              key: "sub2",
+              icon: React.createElement(LayoutOutlined),
+              label: "布局工具",
+              children: [{ key: "3", label: "Grid编辑器" }],
+            },
+          ]}
+          onClick={({ key }) => setCurrentPage(key)}
         />
       </div>
 
-      <div style={{ gridArea: "main" }}>
-        <Content style={{ padding: "0 24px", minHeight: 280 }}>
+      <div
+        style={{
+          gridArea: "main",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "auto",
+        }}
+      >
+        <Content
+          style={{
+            padding: "0 24px",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "8px",
+              padding: "12px 0",
             }}
           >
             <Breadcrumb
-              items={[{ title: "Home" }, { title: "List" }, { title: "App" }]}
+              items={[
+                { title: "Home" },
+                {
+                  title:
+                    currentPage === "3"
+                      ? "Grid编辑器"
+                      : currentPage === "2"
+                        ? "SearchTable"
+                        : "Dashboard",
+                },
+              ]}
             />
+          </div>
+          <div style={{ flex: 1, overflow: "auto" }}>
+            {pageMap[currentPage] || <SearchTable />}
           </div>
         </Content>
       </div>
