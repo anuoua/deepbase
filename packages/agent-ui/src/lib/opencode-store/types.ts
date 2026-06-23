@@ -48,16 +48,20 @@ export interface RevertStatus {
   readonly hiddenCount: number;
 }
 
-export interface ClientSnapshot {
-  readonly sessionID?: string;
-  readonly sessions: readonly SessionRef[];
+export interface SessionSnapshot {
+  readonly id: string;
+  readonly loading: boolean;
   readonly messages: readonly Bubble[];
   readonly childSessions: readonly Session[];
-  readonly childMessages: ReadonlyMap<string, readonly Bubble[]>;
-  readonly childLoading: ReadonlySet<string>;
   readonly requesting: boolean;
   readonly streamPhase: StreamPhase;
   readonly revert: RevertStatus;
+  readonly error?: OpencodeError;
+}
+
+export interface ManagerSnapshot {
+  readonly sessions: readonly SessionRef[];
+  readonly activeID?: string;
   readonly providers: readonly Provider[];
   readonly providersLoading: boolean;
   readonly error?: OpencodeError;
@@ -82,7 +86,7 @@ export class OpencodeError extends Error {
   }
 }
 
-export interface OpencodeStoreConfig {
+export interface OpencodeConfig {
   readonly baseUrl?: string;
   readonly directory?: string;
 }

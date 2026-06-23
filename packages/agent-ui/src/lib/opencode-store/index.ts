@@ -1,5 +1,6 @@
-export { OpencodeStore } from "./store";
-export { useOpencode, selectors } from "./useOpencode";
+export { Session } from "./session";
+export { SessionManager } from "./session-manager";
+export { useManager, useSession, managerSelectors, sessionSelectors } from "./hooks";
 export { newBubbleId, messagesToBubbles, partitionTools, userBubbleFromMessage, assistantBubbleFromMessage, createUserBubbleLocal } from "./bubble";
 export { initialStreamingState, reduce } from "./streaming";
 export type { MessageWithParts } from "./bubble";
@@ -10,11 +11,12 @@ export type {
   SubtaskRef,
   BubbleStatus,
   AssistantPhase,
-  ClientSnapshot,
+  SessionSnapshot,
+  ManagerSnapshot,
   SessionRef,
   StreamPhase,
   RevertStatus,
   OpencodeError,
   OpencodeErrorCode,
-  OpencodeStoreConfig,
+  OpencodeConfig,
 } from "./types";

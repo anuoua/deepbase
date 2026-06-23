@@ -2,34 +2,33 @@ import { Alert, Button, Flex, Input } from "antd";
 import { HistoryOutlined, SendOutlined } from "@ant-design/icons";
 import { useCallback, useState } from "react";
 import {
-  useOpencode,
-  selectors,
-  type OpencodeStore,
+  useSession,
+  sessionSelectors,
+  type Session,
 } from "../../../lib/opencode-store";
 import { useDesignTokens } from "../hooks/useDesignTokens";
 
 export function MessageInput({
-  store,
+  session,
   onConfigOpen,
 }: {
-  store: OpencodeStore;
+  session: Session;
   onConfigOpen: () => void;
 }) {
   const t = useDesignTokens();
   const [inputValue, setInputValue] = useState("");
 
-  const requesting = useOpencode(store, selectors.requesting);
-  const revert = useOpencode(store, selectors.revert);
-  const error = useOpencode(store, selectors.error);
-  const sessionID = useOpencode(store, selectors.sessionID);
+  const requesting = useSession(session, sessionSelectors.requesting);
+  const revert = useSession(session, sessionSelectors.revert);
+  const error = useSession(session, sessionSelectors.error);
 
   const submit = useCallback(
     (text: string) => {
-      if (requesting || !sessionID) return;
-      void store.send(text);
+      if (requesting) return;
+      void session.send(text);
       setInputValue("");
     },
-    [requesting, sessionID, store],
+    [requesting, session],
   );
 
   return (
@@ -51,7 +50,7 @@ export function MessageInput({
             <Button
               size="small"
               type="link"
-              onClick={() => void store.clearRevert()}
+              onClick={() => void session.clearRevert()}
             >
               撤销回退
             </Button>
@@ -65,7 +64,7 @@ export function MessageInput({
           type="error"
           showIcon
           title={error.message}
-          closable={{ onClose: () => store.clearError() }}
+          closable={{ onClose: () => session.clearError() }}
           style={{ marginBottom: t.space.sm }}
         />
       ) : null}
@@ -96,7 +95,7 @@ export function MessageInput({
           </Button>
         </Flex>
         {requesting ? (
-          <Button size="small" danger onClick={() => void store.abort()}>
+          <Button size="small" danger onClick={() => void session.abort()}>
             取消
           </Button>
         ) : (

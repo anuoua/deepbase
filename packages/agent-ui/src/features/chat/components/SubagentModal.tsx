@@ -1,26 +1,27 @@
 import { Modal, Spin, Typography, Flex } from "antd";
 import {
-  useOpencode,
-  selectors,
-  type OpencodeStore,
+  useSession,
+  sessionSelectors,
+  type SessionManager,
 } from "../../../lib/opencode-store";
 import { MessageList } from "./MessageList";
 
 export function SubagentModal({
-  store,
+  manager,
   sessionID,
   title,
   open,
   onClose,
 }: {
-  store: OpencodeStore;
+  manager: SessionManager;
   sessionID: string;
   title?: string;
   open: boolean;
   onClose: () => void;
 }) {
-  const messages = useOpencode(store, selectors.childMessages(sessionID));
-  const loading = useOpencode(store, selectors.isChildLoading(sessionID));
+  const session = manager.get(sessionID);
+  const messages = useSession(session, sessionSelectors.messages);
+  const loading = useSession(session, sessionSelectors.loading);
 
   return (
     <Modal

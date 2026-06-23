@@ -1,27 +1,26 @@
 import { useCallback, useState } from "react";
-import type { OpencodeStore } from "../../../lib/opencode-store";
+import type { SessionManager } from "../../../lib/opencode-store";
 
-export function useSessionManager(store: OpencodeStore) {
+export function useSessionManagerHook(manager: SessionManager) {
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
   const create = useCallback(async () => {
-    const id = await store.createSession({ title: "新对话", switch: true });
-    return id;
-  }, [store]);
+    return manager.create({ title: "新对话" });
+  }, [manager]);
 
   const remove = useCallback(
     async (sessionID: string) => {
-      await store.deleteSession(sessionID);
+      await manager.delete(sessionID);
     },
-    [store],
+    [manager],
   );
 
   const switchTo = useCallback(
     (sessionID: string) => {
-      void store.switchTo(sessionID);
+      void manager.setActive(sessionID);
     },
-    [store],
+    [manager],
   );
 
   const startRename = useCallback(
@@ -39,10 +38,10 @@ export function useSessionManager(store: OpencodeStore) {
 
   const confirmRename = useCallback(async () => {
     if (!renameTarget || !renameValue.trim()) return;
-    await store.renameSession(renameTarget, renameValue.trim());
+    await manager.rename(renameTarget, renameValue.trim());
     setRenameTarget(null);
     setRenameValue("");
-  }, [renameTarget, renameValue, store]);
+  }, [renameTarget, renameValue, manager]);
 
   return {
     create,

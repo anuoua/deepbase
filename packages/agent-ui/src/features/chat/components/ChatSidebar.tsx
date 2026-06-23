@@ -1,22 +1,26 @@
 import { Button, Dropdown, Flex, Menu } from "antd";
-import { useOpencode, selectors, type OpencodeStore } from "../../../lib/opencode-store";
-import type { SessionManager } from "../types";
+import {
+  useManager,
+  managerSelectors,
+  type SessionManager,
+} from "../../../lib/opencode-store";
+import type { SessionManagerActions } from "../types";
 import { useDesignTokens } from "../hooks/useDesignTokens";
 
 const SIDEBAR_WIDTH = 240;
 
 export function ChatSidebar({
-  store,
-  sessionManager,
+  manager,
+  actions,
 }: {
-  store: OpencodeStore;
-  sessionManager: SessionManager;
+  manager: SessionManager;
+  actions: SessionManagerActions;
 }) {
   const t = useDesignTokens();
-  const sessionID = useOpencode(store, selectors.sessionID);
-  const sessions = useOpencode(store, selectors.sessions);
+  const activeID = useManager(manager, managerSelectors.activeID);
+  const sessions = useManager(manager, managerSelectors.sessions);
 
-  const { create, remove, switchTo, startRename } = sessionManager;
+  const { create, remove, switchTo, startRename } = actions;
 
   const menuItems = sessions.map((conv) => ({
     key: conv.id,
@@ -63,7 +67,7 @@ export function ChatSidebar({
       </Button>
       <Menu
         style={{ border: "none" }}
-        selectedKeys={sessionID ? [sessionID] : []}
+        selectedKeys={activeID ? [activeID] : []}
         onSelect={({ key }) => switchTo(key)}
         items={menuItems}
       />

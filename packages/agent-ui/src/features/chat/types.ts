@@ -1,3 +1,3 @@
-import type { useSessionManager } from "./hooks/useSessionManager";
+import type { useSessionManagerHook } from "./hooks/useSessionManager";
 
-export type SessionManager = ReturnType<typeof useSessionManager>;
+export type SessionManagerActions = ReturnType<typeof useSessionManagerHook>;

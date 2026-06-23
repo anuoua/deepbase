@@ -1,18 +1,17 @@
 import { Form, Modal, Select, Spin, Typography } from "antd";
-import { useOpencode, selectors } from "../../../lib/opencode-store";
-import type { OpencodeStore } from "../../../lib/opencode-store";
+import { useManager, managerSelectors, type SessionManager } from "../../../lib/opencode-store";
 
 export function ConfigModal({
-  store,
+  manager,
   open,
   onClose,
 }: {
-  store: OpencodeStore;
+  manager: SessionManager;
   open: boolean;
   onClose: () => void;
 }) {
-  const providers = useOpencode(store, selectors.providers);
-  const loading = useOpencode(store, selectors.providersLoading);
+  const providers = useManager(manager, managerSelectors.providers);
+  const loading = useManager(manager, managerSelectors.providersLoading);
 
   return (
     <Modal

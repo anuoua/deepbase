@@ -1,11 +1,14 @@
-import { Flex } from "antd";
+import { Flex, Spin } from "antd";
 import { useCallback, useEffect, useState } from "react";
+import type { Session } from "../../lib/opencode-store";
 import {
-  OpencodeStore,
-  useOpencode,
-  selectors,
+  SessionManager,
+  useManager,
+  useSession,
+  managerSelectors,
+  sessionSelectors,
 } from "../../lib/opencode-store";
-import { useSessionManager } from "./hooks/useSessionManager";
+import { useSessionManagerHook } from "./hooks/useSessionManager";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { MessageList } from "./components/MessageList";
 import { MessageInput } from "./components/MessageInput";
@@ -14,7 +17,7 @@ import { ConfigModal } from "./components/ConfigModal";
 import { RenameModal } from "./components/RenameModal";
 import { SubagentModal } from "./components/SubagentModal";
 
-const store = OpencodeStore.create();
+const manager = SessionManager.create();
 
 export const AgentChat = () => {
   const [configOpen, setConfigOpen] = useState(false);
@@ -23,79 +26,71 @@ export const AgentChat = () => {
     title?: string;
   } | null>(null);
 
-  const messages = useOpencode(store, selectors.messages);
-  const sessions = useOpencode(store, selectors.sessions);
-  const sessionID = useOpencode(store, selectors.sessionID);
-  const childSessions = useOpencode(store, selectors.childSessions);
+  const sessions = useManager(manager, managerSelectors.sessions);
+  const activeID = useManager(manager, managerSelectors.activeID);
 
-  const sessionManager = useSessionManager(store);
+  const actions = useSessionManagerHook(manager);
 
   useEffect(() => {
-    void store.refreshSessions();
+    void manager.refresh();
   }, []);
 
   useEffect(() => {
-    if (sessions.length > 0 && !sessionID) {
+    if (sessions.length > 0 && !activeID) {
       const first = sessions[0];
-      if (first) void store.switchTo(first.id);
+      if (first) void manager.setActive(first.id);
     }
-  }, [sessions, sessionID]);
+  }, [sessions, activeID]);
 
-  useEffect(() => {
-    if (subagentSession) {
-      store.watchChild(subagentSession.id);
-      return () => store.unwatchChild(subagentSession.id);
-    }
-  }, [subagentSession]);
+  const session = manager.getActive();
 
-  const handleRevert = useCallback(async (messageID: string) => {
-    const text = await store.revertTo(messageID);
-    return text;
-  }, []);
-
-  const handleSubtaskClick = useCallback((childSessionID: string) => {
-    const child = childSessions.find((s) => s.id === childSessionID);
-    setSubagentSession(
-      child
-        ? { id: childSessionID, title: child.title }
-        : { id: childSessionID },
-    );
-  }, [childSessions]);
-
-  const handleConfigOpen = useCallback(() => {
-    void store.loadProviders();
-    setConfigOpen(true);
-  }, []);
+  const handleSubtaskClick = useCallback(
+    (childID: string) => {
+      if (!session) return;
+      const child = session
+        .getSnapshot()
+        .childSessions.find((s) => s.id === childID);
+      setSubagentSession(
+        child ? { id: childID, title: child.title } : { id: childID },
+      );
+    },
+    [session],
+  );
 
   return (
     <Flex style={{ height: "100vh" }}>
-      <ChatSidebar store={store} sessionManager={sessionManager} />
+      <ChatSidebar manager={manager} actions={actions} />
       <Flex vertical flex={1} style={{ overflow: "hidden" }}>
-        {messages.length === 0 && sessionID ? (
-          <PromptSuggestions onPick={(label) => void store.send(label)} />
-        ) : (
-          <MessageList
-            messages={messages}
-            onRevert={handleRevert}
+        {session ? (
+          <ChatPanel
+            key={session.id}
+            session={session}
+            onConfigOpen={() => {
+              void manager.loadProviders();
+              setConfigOpen(true);
+            }}
             onSubtaskClick={handleSubtaskClick}
+            renameProps={{
+              open: actions.renameTarget !== null,
+              value: actions.renameValue,
+              onChange: actions.setRenameValue,
+              onClose: actions.cancelRename,
+              onConfirm: actions.confirmRename,
+            }}
           />
+        ) : (
+          <Flex flex={1} align="center" justify="center">
+            <Spin />
+          </Flex>
         )}
-        <MessageInput store={store} onConfigOpen={handleConfigOpen} />
         <ConfigModal
-          store={store}
+          manager={manager}
           open={configOpen}
           onClose={() => setConfigOpen(false)}
         />
-        <RenameModal
-          open={sessionManager.renameTarget !== null}
-          value={sessionManager.renameValue}
-          onClose={sessionManager.cancelRename}
-          onChange={sessionManager.setRenameValue}
-          onConfirm={sessionManager.confirmRename}
-        />
         {subagentSession ? (
           <SubagentModal
-            store={store}
+            manager={manager}
             sessionID={subagentSession.id}
             {...("title" in subagentSession && subagentSession.title
               ? { title: subagentSession.title }
@@ -108,3 +103,56 @@ export const AgentChat = () => {
     </Flex>
   );
 };
+
+function ChatPanel({
+  session,
+  onConfigOpen,
+  onSubtaskClick,
+  renameProps,
+}: {
+  session: Session;
+  onConfigOpen: () => void;
+  onSubtaskClick: (childSessionID: string) => void;
+  renameProps: {
+    open: boolean;
+    value: string;
+    onChange: (v: string) => void;
+    onClose: () => void;
+    onConfirm: () => void;
+  };
+}) {
+  const messages = useSession(session, sessionSelectors.messages);
+  const loading = useSession(session, sessionSelectors.loading);
+
+  const handleRevert = useCallback(
+    async (messageID: string) => {
+      return session.revertTo(messageID);
+    },
+    [session],
+  );
+
+  if (loading && messages.length === 0) {
+    return <Flex flex={1} align="center" justify="center"><Spin /></Flex>;
+  }
+
+  if (messages.length === 0) {
+    return (
+      <>
+        <PromptSuggestions onPick={(label) => void session.send(label)} />
+        <RenameModal {...renameProps} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <MessageList
+        messages={messages}
+        onRevert={handleRevert}
+        onSubtaskClick={onSubtaskClick}
+      />
+      <MessageInput session={session} onConfigOpen={onConfigOpen} />
+      <RenameModal {...renameProps} />
+    </>
+  );
+}
