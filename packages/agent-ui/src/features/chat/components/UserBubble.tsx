@@ -2,16 +2,15 @@ import { Button } from "antd";
 import { RollbackOutlined } from "@ant-design/icons";
 import { Typography } from "antd";
 import { useState } from "react";
-import type { BubbleItem } from "../../../lib/opencode-client/types";
+import type { UserBubble as UserBubbleData } from "../../../lib/opencode-store";
 
 export function UserBubble({
   item,
   onRevert,
 }: {
-  item: BubbleItem;
+  item: UserBubbleData;
   onRevert?: (messageID: string) => void;
 }) {
-  const content = typeof item.content === "string" ? item.content : "";
   const [showRevert, setShowRevert] = useState(false);
   return (
     <div
@@ -28,7 +27,7 @@ export function UserBubble({
             padding: "8px 12px",
           }}
         >
-          <Typography.Text>{content}</Typography.Text>
+          <Typography.Text>{item.text}</Typography.Text>
         </div>
         {item.messageID && onRevert && showRevert ? (
           <Button

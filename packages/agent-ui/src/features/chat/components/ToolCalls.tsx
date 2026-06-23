@@ -1,16 +1,15 @@
 import { Collapse, Steps } from "antd";
 import { useState, useMemo } from "react";
-import type { ToolPart } from "../../../api/types/index";
+import type { ToolPart } from "@opencode-ai/sdk";
 
-export function ToolCalls({ toolCalls }: { toolCalls: ToolPart[] }) {
+export function ToolCalls({ toolCalls }: { toolCalls: readonly ToolPart[] }) {
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
 
   const stepsItems = useMemo(
     () =>
       toolCalls.map((tc, i) => {
         const state = tc.state;
-        const inputStr =
-          "input" in state ? JSON.stringify(state.input, null, 2) : "";
+        const inputStr = JSON.stringify(state.input, null, 2);
         return {
           key: String(i),
           title: tc.tool,
@@ -21,6 +20,21 @@ export function ToolCalls({ toolCalls }: { toolCalls: ToolPart[] }) {
               ? "error"
               : "process") as "finish" | "error" | "process",
         };
+      }),
+    [toolCalls],
+  );
+
+  const resultList = useMemo(
+    () =>
+      toolCalls.map((tc, i) => {
+        const state = tc.state;
+        const resultStr =
+          state.status === "completed"
+            ? (state.output ?? "")
+            : state.status === "error"
+              ? (state.error ?? "")
+              : "";
+        return { key: i, text: resultStr };
       }),
     [toolCalls],
   );
@@ -48,18 +62,11 @@ export function ToolCalls({ toolCalls }: { toolCalls: ToolPart[] }) {
                   current={toolCalls.length}
                   items={stepsItems}
                 />
-                {toolCalls.map((tc, i) => {
-                  const state = tc.state;
-                  const resultStr =
-                    state.status === "completed"
-                      ? (state.result ?? "")
-                      : state.status === "error"
-                        ? (state.error ?? "")
-                        : "";
-                  if (!resultStr) return null;
+                {resultList.map(({ key, text }) => {
+                  if (!text) return null;
                   return (
                     <pre
-                      key={i}
+                      key={key}
                       style={{
                         margin: "4px 0 0 0",
                         whiteSpace: "pre-wrap",
@@ -70,7 +77,7 @@ export function ToolCalls({ toolCalls }: { toolCalls: ToolPart[] }) {
                         borderRadius: 4,
                       }}
                     >
-                      {resultStr}
+                      {text}
                     </pre>
                   );
                 })}

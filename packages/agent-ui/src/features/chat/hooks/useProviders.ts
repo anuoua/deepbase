@@ -1,9 +1,9 @@
-import type { ProviderConfig } from "../../../api/types/index";
+import type { Provider } from "@opencode-ai/sdk";
+import type { OpencodeStore } from "../../../lib/opencode-store";
 import { useState, useCallback } from "react";
-import { opencode } from "../../../api/client";
 
-export function useProviders() {
-  const [providers, setProviders] = useState<ProviderConfig[]>([]);
+export function useProviders(store: OpencodeStore) {
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -11,13 +11,15 @@ export function useProviders() {
     setOpen(true);
     setLoading(true);
     try {
-      const res = await opencode.getProviders();
-      setProviders(res.providers);
+      const r = await store.sdkClient.config.providers();
+      if (r.error) throw r.error;
+      setProviders(r.data?.providers ?? []);
     } catch {
+      // silent
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [store]);
 
   const close = useCallback(() => {
     setOpen(false);

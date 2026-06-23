@@ -1,81 +1,47 @@
 import { useCallback, useEffect, useState } from "react";
 import { Flex, Spin, Typography } from "antd";
 import { RightOutlined, DownOutlined } from "@ant-design/icons";
-import { opencode } from "../../../api/client";
-import type { OpenCodeSession } from "../../../api/types/index";
-import { nextId, type BubbleItem } from "../../../lib/opencode-client/types";
+import type { Session } from "@opencode-ai/sdk";
+import type { OpencodeStore, Bubble } from "../../../lib/opencode-store";
 import { UserBubble } from "./UserBubble";
 import { AssistantBubble } from "./AssistantBubble";
 
-function toBubbleItems(
-  msgs: import("../../../api/types/index").MessageWithParts[],
-): BubbleItem[] {
-  const items: BubbleItem[] = [];
-  for (const msg of msgs) {
-    if (msg.info.role === "user") {
-      const textPart = msg.parts.find((p) => p.type === "text");
-      items.push({
-        key: nextId(),
-        role: "user",
-        content: (textPart as { text?: string } | undefined)?.text ?? "",
-        loading: false,
-        streaming: false,
-        time: msg.info.time.created,
-        messageID: msg.info.id,
-      });
-    } else if (msg.info.role === "assistant") {
-      const textPart = msg.parts.find((p) => p.type === "text");
-      const reasoningPart = msg.parts.find((p) => p.type === "reasoning");
-      const toolParts = msg.parts.filter((p) => p.type === "tool");
-      const hasContent = textPart || reasoningPart || toolParts.length > 0;
-      if (!hasContent) continue;
-      items.push({
-        key: nextId(),
-        role: "assistant",
-        content: {
-          role: "assistant",
-          content: (textPart as { text?: string } | undefined)?.text ?? "",
-          thinking: (reasoningPart as { text?: string } | undefined)?.text ?? "",
-          toolCalls: toolParts,
-          phase: "answering",
-        },
-        loading: false,
-        streaming: false,
-        time: msg.info.time.created,
-        messageID: msg.info.id,
-      });
-    }
-  }
-  return items;
-}
-
 export function ChildSessionEntry({
+  store,
   session,
   defaultOpen,
 }: {
-  session: OpenCodeSession;
+  store: OpencodeStore;
+  session: Session;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
-  const [items, setItems] = useState<BubbleItem[]>([]);
+  const [items, setItems] = useState<Bubble[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open || items.length > 0) return;
-    (async () => {
+    let cancelled = false;
+    void (async () => {
       setLoading(true);
       try {
-        const msgs = await opencode.getMessages(session.id);
-        setItems(toBubbleItems(msgs));
+        const msgs = await store.loadChildMessages(session.id);
+        if (!cancelled) setItems(msgs);
       } catch (err) {
         console.error("Failed to load child session messages:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [open, session.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, session.id, items.length, store]);
 
-  const agentLabel = session.agent ?? "subagent";
+  const renderBubble = useCallback((item: Bubble) => {
+    if (item.kind === "user") return <UserBubble key={item.id} item={item} />;
+    return <AssistantBubble key={item.id} item={item} />;
+  }, []);
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -92,7 +58,7 @@ export function ChildSessionEntry({
         <Flex align="center" gap={8}>
           {open ? <DownOutlined /> : <RightOutlined />}
           <Typography.Text strong style={{ fontSize: 13 }}>
-            🤖 {agentLabel}
+            🤖 subagent
           </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {session.title}
@@ -106,13 +72,7 @@ export function ChildSessionEntry({
               <Spin />
             </Flex>
           ) : (
-            items.map((item) =>
-              item.role === "user" ? (
-                <UserBubble key={item.key} item={item} />
-              ) : (
-                <AssistantBubble key={item.key} item={item} />
-              ),
-            )
+            items.map(renderBubble)
           )}
         </div>
       )}

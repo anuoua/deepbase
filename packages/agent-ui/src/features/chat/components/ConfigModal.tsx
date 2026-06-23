@@ -1,5 +1,5 @@
 import { Form, Modal, Select, Typography } from "antd";
-import type { ProviderConfig } from "../../../api/types/index";
+import type { Provider } from "@opencode-ai/sdk";
 
 export function ConfigModal({
   open,
@@ -9,7 +9,7 @@ export function ConfigModal({
 }: {
   open: boolean;
   loading: boolean;
-  providers: ProviderConfig[];
+  providers: Provider[];
   onClose: () => void;
 }) {
   return (

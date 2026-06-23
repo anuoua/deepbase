@@ -2,15 +2,14 @@ import ReactMarkdown from "react-markdown";
 import { Avatar, Card, Collapse, Spin, Typography } from "antd";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { ToolCalls } from "./ToolCalls";
-import type { AgentUIMessage, BubbleItem } from "../../../lib/opencode-client/types";
+import type { AssistantBubble as AssistantBubbleData } from "../../../lib/opencode-store";
 
-export function AssistantBubble({ item }: { item: BubbleItem }) {
-  const msg = item.content as AgentUIMessage;
-  const streamActive = msg.phase === "thinking" || item.streaming;
+export function AssistantBubble({ item }: { item: AssistantBubbleData }) {
+  const streamActive = item.status === "streaming" || item.status === "pending";
 
   return (
     <div style={{ marginBottom: 16 }}>
-      {msg.thinking ? (
+      {item.thinking ? (
         <Collapse
           size="small"
           defaultActiveKey={["think"]}
@@ -20,7 +19,7 @@ export function AssistantBubble({ item }: { item: BubbleItem }) {
               label: (
                 <span>
                   思考过程
-                  {streamActive ? (
+                  {streamActive && item.phase === "thinking" ? (
                     <Spin size="small" style={{ marginLeft: 8 }} />
                   ) : null}
                 </span>
@@ -30,7 +29,7 @@ export function AssistantBubble({ item }: { item: BubbleItem }) {
                   style={{ margin: 0, whiteSpace: "pre-wrap" }}
                   type="secondary"
                 >
-                  {msg.thinking}
+                  {item.thinking}
                 </Typography.Paragraph>
               ),
             },
@@ -38,11 +37,9 @@ export function AssistantBubble({ item }: { item: BubbleItem }) {
         />
       ) : null}
 
-      {msg.toolCalls && msg.toolCalls.length > 0 ? (
-        <ToolCalls toolCalls={msg.toolCalls} />
-      ) : null}
+      {item.toolCalls.length > 0 ? <ToolCalls toolCalls={item.toolCalls} /> : null}
 
-      {msg.content ? (
+      {item.text ? (
         <div style={{ display: "flex", marginTop: 16 }}>
           <Avatar
             style={{ background: "#f0f0f0", marginRight: 8, flexShrink: 0 }}
@@ -54,11 +51,11 @@ export function AssistantBubble({ item }: { item: BubbleItem }) {
             style={{
               flex: 1,
               border: "1px solid #f0f0f0",
-              opacity: item.loading ? 0.7 : 1,
+              opacity: item.status === "pending" ? 0.7 : 1,
             }}
             styles={{ body: { padding: "8px 12px" } }}
           >
-            {(item.loading || item.streaming) && !msg.content ? (
+            {streamActive && !item.text ? (
               <Spin />
             ) : (
               <div className="markdown-body">
@@ -84,13 +81,13 @@ export function AssistantBubble({ item }: { item: BubbleItem }) {
                     },
                   }}
                 >
-                  {msg.content}
+                  {item.text}
                 </ReactMarkdown>
               </div>
             )}
           </Card>
         </div>
-      ) : item.loading ? (
+      ) : item.status === "pending" ? (
         <div style={{ display: "flex", marginTop: 16 }}>
           <Avatar
             style={{ background: "#f0f0f0", marginRight: 8, flexShrink: 0 }}

@@ -1,9 +1,13 @@
-import { HistoryOutlined, RollbackOutlined, SendOutlined } from "@ant-design/icons";
+import { HistoryOutlined, SendOutlined } from "@ant-design/icons";
 import { Button, Dropdown, Flex, Input, Menu, Typography } from "antd";
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
-import type { OpenCodeSession } from "../../api/types/index";
-import { OpencodeClient } from "../../lib/opencode-client";
-import { useOpencodeClient } from "../../lib/opencode-client/useOpencodeClient";
+import type { Session } from "@opencode-ai/sdk";
+import {
+  OpencodeStore,
+  selectors,
+  useOpencode,
+  type Bubble,
+} from "../../lib/opencode-store";
 import { useProviders } from "./hooks/useProviders";
 import { UserBubble } from "./components/UserBubble";
 import { AssistantBubble } from "./components/AssistantBubble";
@@ -11,9 +15,16 @@ import { ChildSessionEntry } from "./components/ChildSessionEntry";
 import { PromptSuggestions } from "./components/PromptSuggestions";
 import { ConfigModal } from "./components/ConfigModal";
 import { RenameModal } from "./components/RenameModal";
-import type { BubbleItem } from "../../lib/opencode-client/types";
 
-const client = OpencodeClient.create();
+const store = OpencodeStore.create();
+
+interface ChatItem {
+  key: string;
+  time: number;
+  type: "message" | "child_session";
+  bubble?: Bubble;
+  childSession?: Session;
+}
 
 export const AgentChat = () => {
   const [inputValue, setInputValue] = useState("");
@@ -21,49 +32,41 @@ export const AgentChat = () => {
   const [renameValue, setRenameValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const {
-    messages,
-    requesting,
-    hiddenCount,
-    childSessions,
-    sessions,
-    sessionID,
-    switchSession,
-    sendMessage,
-    revertMessage: clientRevert,
-    unrevertMessages,
-    abortSession,
-    createSession,
-    deleteSession,
-    renameSession,
-  } = useOpencodeClient(client);
+  const messages = useOpencode(store, selectors.messages);
+  const requesting = useOpencode(store, selectors.requesting);
+  const sessionID = useOpencode(store, selectors.sessionID);
+  const sessions = useOpencode(store, selectors.sessions);
+  const childSessions = useOpencode(store, selectors.childSessions);
+  const revert = useOpencode(store, selectors.revert);
+  const error = useOpencode(store, selectors.error);
+
+  useEffect(() => {
+    void store.refreshSessions();
+  }, []);
 
   useEffect(() => {
     if (sessions.length > 0 && !sessionID) {
       const first = sessions[0];
-      if (first) switchSession(first.key);
+      if (first) void store.switchTo(first.id);
     }
-  }, [sessions, sessionID, switchSession]);
+  }, [sessions, sessionID]);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  const handleRevert = useCallback(
-    async (messageID: string) => {
-      const text = await clientRevert(messageID);
-      if (text) setInputValue(text);
-    },
-    [clientRevert],
-  );
+  const handleRevert = useCallback(async (messageID: string) => {
+    const text = await store.revertTo(messageID);
+    if (text) setInputValue(text);
+  }, []);
 
   const submit = useCallback(
     (text: string) => {
       if (requesting || !sessionID) return;
-      sendMessage(text);
+      void store.send(text);
     },
-    [requesting, sessionID, sendMessage],
+    [requesting, sessionID],
   );
 
   const handleSubmit = useCallback(
@@ -80,37 +83,32 @@ export const AgentChat = () => {
   );
 
   const handleNewConversation = useCallback(async () => {
-    const id = await createSession("新对话");
-    switchSession(id);
-  }, [createSession, switchSession]);
+    const id = await store.createSession({ title: "新对话", switch: true });
+    if (id) setInputValue("");
+  }, []);
 
-  const handleDeleteConversation = useCallback(
-    async (key: string) => {
-      await deleteSession(key);
-    },
-    [deleteSession],
-  );
+  const handleDeleteConversation = useCallback(async (key: string) => {
+    await store.deleteSession(key);
+  }, []);
 
   const handleRenameConversation = useCallback(
     (key: string) => {
-      const conv = sessions.find((s) => s.key === key);
+      const conv = sessions.find((s) => s.id === key);
       setRenameTarget(key);
-      setRenameValue(
-        typeof conv?.label === "string" ? conv.label : key.slice(0, 8),
-      );
+      setRenameValue(conv?.title ?? key.slice(0, 8));
     },
     [sessions],
   );
 
   const handleRenameConfirm = useCallback(async () => {
     if (!renameTarget || !renameValue.trim()) return;
-    await renameSession(renameTarget, renameValue.trim());
+    await store.renameSession(renameTarget, renameValue.trim());
     setRenameTarget(null);
     setRenameValue("");
-  }, [renameTarget, renameValue, renameSession]);
+  }, [renameTarget, renameValue]);
 
   const convMenuItems = sessions.map((conv) => ({
-    key: conv.key,
+    key: conv.id,
     label: (
       <Dropdown
         menu={{
@@ -118,36 +116,29 @@ export const AgentChat = () => {
             {
               key: "rename",
               label: "重命名",
-              onClick: () => handleRenameConversation(conv.key),
+              onClick: () => handleRenameConversation(conv.id),
             },
             {
               key: "delete",
               label: "删除对话",
               danger: true,
-              onClick: () => handleDeleteConversation(conv.key),
+              onClick: () => handleDeleteConversation(conv.id),
             },
           ],
         }}
         trigger={["contextMenu"]}
       >
-        <span>{conv.label}</span>
+        <span>{conv.title}</span>
       </Dropdown>
     ),
   }));
 
-  const chatItems = useMemo(() => {
-    interface ChatItem {
-      key: string;
-      time: number;
-      type: "message" | "child_session";
-      bubbleItem?: BubbleItem;
-      childSession?: OpenCodeSession;
-    }
+  const chatItems = useMemo<ChatItem[]>(() => {
     const items: ChatItem[] = messages.map((b) => ({
-      key: String(b.key),
-      time: b.time ?? 0,
+      key: b.id,
+      time: b.time,
       type: "message" as const,
-      bubbleItem: b,
+      bubble: b,
     }));
     for (const s of childSessions) {
       items.push({
@@ -167,7 +158,7 @@ export const AgentChat = () => {
     open: configOpen,
     load: handleConfigOpen,
     close: handleConfigClose,
-  } = useProviders();
+  } = useProviders(store);
 
   return (
     <Flex style={{ height: "100vh" }}>
@@ -191,7 +182,7 @@ export const AgentChat = () => {
         <Menu
           style={{ border: "none" }}
           selectedKeys={sessionID ? [sessionID] : []}
-          onSelect={({ key }) => switchSession(key)}
+          onSelect={({ key }) => void store.switchTo(key)}
           items={convMenuItems}
         />
       </Flex>
@@ -205,15 +196,19 @@ export const AgentChat = () => {
           >
             {chatItems.map((item) =>
               item.type === "child_session" ? (
-                <ChildSessionEntry key={item.key} session={item.childSession!} />
-              ) : item.bubbleItem!.role === "user" ? (
+                <ChildSessionEntry
+                  key={item.key}
+                  store={store}
+                  session={item.childSession!}
+                />
+              ) : item.bubble!.kind === "user" ? (
                 <UserBubble
                   key={item.key}
-                  item={item.bubbleItem!}
+                  item={item.bubble!}
                   onRevert={handleRevert}
                 />
               ) : (
-                <AssistantBubble key={item.key} item={item.bubbleItem!} />
+                <AssistantBubble key={item.key} item={item.bubble!} />
               ),
             )}
           </div>
@@ -226,17 +221,22 @@ export const AgentChat = () => {
             background: "#fff",
           }}
         >
-          {hiddenCount > 0 ? (
+          {revert.canRestore ? (
             <Flex justify="center" style={{ padding: "4px 0" }}>
               <Button
                 size="small"
                 type="link"
                 icon={<HistoryOutlined />}
-                onClick={unrevertMessages}
+                onClick={() => void store.clearRevert()}
               >
-                撤销回退（恢复 {hiddenCount} 条消息）
+                撤销回退（恢复 {revert.hiddenCount} 条消息）
               </Button>
             </Flex>
+          ) : null}
+          {error ? (
+            <Typography.Text type="danger" style={{ padding: "4px 8px" }}>
+              {error.message}
+            </Typography.Text>
           ) : null}
           <Input.TextArea
             value={inputValue}
@@ -259,7 +259,7 @@ export const AgentChat = () => {
               </Button>
             </Flex>
             {requesting ? (
-              <Button size="small" danger onClick={abortSession}>
+              <Button size="small" danger onClick={() => void store.abort()}>
                 取消
               </Button>
             ) : (
