@@ -12,7 +12,8 @@ export function UserBubble({
   onRevert?: (messageID: string) => void;
 }) {
   const t = useDesignTokens();
-  const [showRevert, setShowRevert] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const canRevert = !!(item.messageID && onRevert);
 
   return (
     <div
@@ -21,8 +22,8 @@ export function UserBubble({
         justifyContent: "flex-end",
         marginBottom: t.space.lg,
       }}
-      onMouseEnter={() => setShowRevert(true)}
-      onMouseLeave={() => setShowRevert(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div style={{ maxWidth: "70%" }}>
         <div
@@ -35,18 +36,26 @@ export function UserBubble({
         >
           <Typography.Text>{item.text}</Typography.Text>
         </div>
-        {item.messageID && onRevert && showRevert ? (
-          <Button
-            type="text"
-            size="small"
-            icon={<RollbackOutlined />}
-            title="回退到此"
-            style={{ marginTop: 2, fontSize: t.font.sm }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRevert(item.messageID!);
-            }}
-          />
+        {canRevert ? (
+          <div style={{ height: 24, marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              type="text"
+              size="small"
+              shape="circle"
+              icon={<RollbackOutlined />}
+              title="回退到此"
+              style={{
+                fontSize: t.font.sm,
+                opacity: hovered ? 1 : 0,
+                pointerEvents: hovered ? "auto" : "none",
+                transition: "opacity 0.15s",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRevert!(item.messageID!);
+              }}
+            />
+          </div>
         ) : null}
       </div>
     </div>

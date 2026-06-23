@@ -21,17 +21,37 @@ const isReasoning = (p: Part): p is Part & { type: "reasoning"; text: string } =
 
 const isTool = (p: Part): p is ToolPart => p.type === "tool";
 
-interface SubtaskPart {
-  readonly id: string;
-  readonly sessionID: string;
-  readonly messageID: string;
-  readonly type: "subtask";
-  readonly agent: string;
-  readonly description: string;
-  readonly prompt: string;
+interface TaskInput {
+  readonly description?: string;
+  readonly subagent_type?: string;
+  readonly prompt?: string;
 }
 
-const isSubtask = (p: Part): p is Part & SubtaskPart => p.type === "subtask";
+function extractSubtask(tc: ToolPart): SubtaskRef {
+  const input = tc.state.input as TaskInput;
+  const metadata = "metadata" in tc.state ? tc.state.metadata : undefined;
+  const childSessionID = metadata?.sessionId;
+  return {
+    id: tc.id,
+    agent: input.subagent_type ?? "subagent",
+    description: input.description ?? "",
+    prompt: input.prompt ?? "",
+    ...(childSessionID ? { childSessionID: String(childSessionID) } : {}),
+  };
+}
+
+export function partitionTools(allTools: readonly ToolPart[]): {
+  regularTools: ToolPart[];
+  subtasks: SubtaskRef[];
+} {
+  const regularTools: ToolPart[] = [];
+  const subtasks: SubtaskRef[] = [];
+  for (const tc of allTools) {
+    if (tc.tool === "task") subtasks.push(extractSubtask(tc));
+    else regularTools.push(tc);
+  }
+  return { regularTools, subtasks };
+}
 
 const textOf = (part: (Part & { text?: string }) | undefined): string =>
   part?.text ?? "";
@@ -56,17 +76,11 @@ export function assistantBubbleFromMessage(
 ): AssistantBubble | null {
   const textPart = msg.parts.find(isText);
   const reasoningPart = msg.parts.find(isReasoning);
-  const toolParts = msg.parts.filter(isTool);
-  const subtaskParts = msg.parts.filter(isSubtask);
-  if (!textPart && !reasoningPart && toolParts.length === 0 && subtaskParts.length === 0)
-    return null;
+  const allTools = msg.parts.filter(isTool);
 
-  const subtasks: SubtaskRef[] = subtaskParts.map((st) => ({
-    id: st.id,
-    agent: st.agent,
-    description: st.description,
-    prompt: st.prompt,
-  }));
+  if (!textPart && !reasoningPart && allTools.length === 0) return null;
+
+  const { regularTools, subtasks } = partitionTools(allTools);
 
   return {
     kind: "assistant",
@@ -77,7 +91,7 @@ export function assistantBubbleFromMessage(
     phase: "answering",
     text: textOf(textPart),
     thinking: textOf(reasoningPart),
-    toolCalls: toolParts,
+    toolCalls: regularTools,
     subtasks,
   };
 }

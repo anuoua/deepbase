@@ -45,36 +45,6 @@ export function AssistantBubble({
         />
       ) : null}
 
-      {item.toolCalls.length > 0 ? <ToolCalls toolCalls={item.toolCalls} /> : null}
-
-      {item.subtasks.length > 0 ? (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: t.space.xs,
-            marginTop: t.space.sm,
-          }}
-        >
-          {item.subtasks.map((st) =>
-            st.childSessionID ? (
-              <Tag
-                key={st.id}
-                color="processing"
-                style={{ cursor: "pointer" }}
-                onClick={() => onSubtaskClick?.(st.childSessionID!)}
-              >
-                🤖 {st.agent}: {st.description}
-              </Tag>
-            ) : (
-              <Tag key={st.id} color="default">
-                🤖 {st.agent}: {st.description}
-              </Tag>
-            ),
-          )}
-        </div>
-      ) : null}
-
       {item.text ? (
         <div style={{ display: "flex", marginTop: t.space.lg }}>
           <Avatar
@@ -148,6 +118,36 @@ export function AssistantBubble({
           >
             <Spin />
           </Card>
+        </div>
+      ) : null}
+
+      {item.toolCalls.length > 0 ? <ToolCalls toolCalls={item.toolCalls} /> : null}
+
+      {item.subtasks.length > 0 ? (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: t.space.xs,
+            marginTop: t.space.sm,
+          }}
+        >
+          {item.subtasks.map((st) =>
+            st.childSessionID ? (
+              <Tag
+                key={st.id}
+                color="processing"
+                style={{ cursor: "pointer" }}
+                onClick={() => onSubtaskClick?.(st.childSessionID!)}
+              >
+                🤖 {st.agent}: {st.description}
+              </Tag>
+            ) : (
+              <Tag key={st.id} color="default">
+                🤖 {st.agent}: {st.description}
+              </Tag>
+            ),
+          )}
         </div>
       ) : null}
     </div>

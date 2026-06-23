@@ -1,11 +1,10 @@
-import { Modal, Spin, Flex, Typography } from "antd";
+import { Modal, Spin, Typography, Flex } from "antd";
 import {
   useOpencode,
   selectors,
   type OpencodeStore,
 } from "../../../lib/opencode-store";
 import { MessageList } from "./MessageList";
-import { useDesignTokens } from "../hooks/useDesignTokens";
 
 export function SubagentModal({
   store,
@@ -20,7 +19,6 @@ export function SubagentModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const t = useDesignTokens();
   const messages = useOpencode(store, selectors.childMessages(sessionID));
   const loading = useOpencode(store, selectors.isChildLoading(sessionID));
 
@@ -32,7 +30,7 @@ export function SubagentModal({
           {title ? (
             <Typography.Text
               type="secondary"
-              style={{ marginLeft: t.space.sm, fontSize: t.font.base }}
+              style={{ marginLeft: 8, fontSize: 14 }}
             >
               {title}
             </Typography.Text>
@@ -58,7 +56,7 @@ export function SubagentModal({
           <Spin />
         </Flex>
       ) : (
-        <MessageList store={store} readonly />
+        <MessageList messages={messages} readonly />
       )}
     </Modal>
   );

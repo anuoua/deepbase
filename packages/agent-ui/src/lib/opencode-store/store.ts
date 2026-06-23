@@ -4,6 +4,7 @@ import {
   createAssistantBubbleLocal,
   createUserBubbleLocal,
   messagesToBubbles,
+  partitionTools,
   type MessageWithParts,
 } from "./bubble";
 import {
@@ -21,7 +22,6 @@ import type {
   RevertStatus,
   SessionRef,
   StreamPhase,
-  SubtaskRef,
 } from "./types";
 
 type Listener = () => void;
@@ -33,6 +33,8 @@ interface StoreState {
   childSessions: Session[];
   childMessages: Map<string, readonly Bubble[]>;
   childLoading: Set<string>;
+  watchedChildren: Set<string>;
+  childStreams: Map<string, StreamingState>;
   requesting: boolean;
   streaming: StreamingState | null;
   pendingUserBubble: Bubble | null;
@@ -52,6 +54,8 @@ const initialState: StoreState = {
   childSessions: [],
   childMessages: new Map(),
   childLoading: new Set(),
+  watchedChildren: new Set(),
+  childStreams: new Map(),
   requesting: false,
   streaming: null,
   pendingUserBubble: null,
@@ -81,6 +85,7 @@ function deriveAssistantBubble(stream: AssistantStream, idle: boolean): Bubble {
     stream.text !== "" ||
     stream.thinking !== "" ||
     stream.toolCalls.length > 0;
+  const { regularTools, subtasks } = partitionTools(stream.toolCalls);
   return {
     kind: "assistant",
     id: `stream-${stream.messageID}`,
@@ -90,29 +95,9 @@ function deriveAssistantBubble(stream: AssistantStream, idle: boolean): Bubble {
     phase: stream.stepFinished || stream.text ? "answering" : "thinking",
     text: stream.text,
     thinking: stream.thinking,
-    toolCalls: stream.toolCalls.map((tc) => ({ ...tc, state: { ...tc.state } })),
-    subtasks: [],
+    toolCalls: regularTools.map((tc) => ({ ...tc, state: { ...tc.state } })),
+    subtasks,
   };
-}
-
-function enrichSubtasks(
-  bubbles: readonly Bubble[],
-  childSessions: readonly Session[],
-): readonly Bubble[] {
-  if (childSessions.length === 0) return bubbles;
-  const sortedChildren = [...childSessions].sort(
-    (a, b) => a.time.created - b.time.created,
-  );
-  let childIdx = 0;
-  return bubbles.map((b) => {
-    if (b.kind !== "assistant" || b.subtasks.length === 0) return b;
-    const subtasks: SubtaskRef[] = b.subtasks.map((st) => {
-      const child = childIdx < sortedChildren.length ? sortedChildren[childIdx] : undefined;
-      childIdx++;
-      return child ? { ...st, childSessionID: child.id } : st;
-    });
-    return { ...b, subtasks };
-  });
 }
 
 function applyRevert(
@@ -191,7 +176,7 @@ export class OpencodeStore {
       sessions: this.state.sessions,
       messages,
       childSessions: this.state.childSessions,
-      childMessages: this.state.childMessages,
+      childMessages: this.buildChildMessagesSnapshot(),
       childLoading: this.state.childLoading,
       requesting: this.state.requesting,
       streamPhase: this.derivePhase(),
@@ -203,9 +188,8 @@ export class OpencodeStore {
   }
 
   private deriveMessages(): readonly Bubble[] {
-    const { baseMessages, streaming, pendingUserBubble, childSessions } = this.state;
-    const enriched = enrichSubtasks(baseMessages, childSessions);
-    if (!streaming) return enriched;
+    const { baseMessages, streaming, pendingUserBubble } = this.state;
+    if (!streaming) return baseMessages;
 
     const user: Bubble | null = pendingUserBubble
       ? streaming.userMessageID
@@ -215,15 +199,15 @@ export class OpencodeStore {
 
     if (streaming.assistants.length === 0) {
       const placeholder = createAssistantBubbleLocal(Date.now(), "stream-placeholder");
-      return user ? [...enriched, user, placeholder] : [...enriched, placeholder];
+      return user ? [...baseMessages, user, placeholder] : [...baseMessages, placeholder];
     }
 
     const assistants = streaming.assistants.map((s) =>
       deriveAssistantBubble(s, streaming.idle),
     );
     return user
-      ? [...enriched, user, ...assistants]
-      : [...enriched, ...assistants];
+      ? [...baseMessages, user, ...assistants]
+      : [...baseMessages, ...assistants];
   }
 
   private derivePhase(): StreamPhase {
@@ -231,6 +215,36 @@ export class OpencodeStore {
     if (this.state.streaming.idle) return "idle";
     if (this.state.streaming.assistants.length === 0) return "sending";
     return "streaming";
+  }
+
+  private deriveChildMessages(
+    base: readonly Bubble[],
+    stream: StreamingState,
+  ): readonly Bubble[] {
+    if (stream.assistants.length === 0) return base;
+    const streamingIDs = new Set(
+      stream.assistants.map((a) => a.messageID),
+    );
+    const filteredBase = base.filter(
+      (b) => !b.messageID || !streamingIDs.has(b.messageID),
+    );
+    const assistants = stream.assistants.map((s) =>
+      deriveAssistantBubble(s, stream.idle),
+    );
+    return [...filteredBase, ...assistants];
+  }
+
+  private buildChildMessagesSnapshot(): ReadonlyMap<string, readonly Bubble[]> {
+    const result = new Map<string, readonly Bubble[]>(
+      this.state.childMessages,
+    );
+    for (const [sessionID, stream] of this.state.childStreams) {
+      const base = this.state.childMessages.get(sessionID);
+      if (base && stream.assistants.length > 0) {
+        result.set(sessionID, this.deriveChildMessages(base, stream));
+      }
+    }
+    return result;
   }
 
   private commit(): void {
@@ -313,6 +327,8 @@ export class OpencodeStore {
           childSessions: [],
           childMessages: new Map(),
           childLoading: new Set(),
+          watchedChildren: new Set(),
+          childStreams: new Map(),
           revert: emptyRevert,
           originalFullLength: 0,
           streaming: null,
@@ -355,6 +371,8 @@ export class OpencodeStore {
       originalFullLength: 0,
       childMessages: new Map(),
       childLoading: new Set(),
+      watchedChildren: new Set(),
+      childStreams: new Map(),
     };
     this.commit();
 
@@ -553,6 +571,64 @@ export class OpencodeStore {
       });
   }
 
+  watchChild(sessionID: string): void {
+    if (this.state.watchedChildren.has(sessionID)) return;
+    const watchedChildren = new Set(this.state.watchedChildren).add(sessionID);
+    const childStreams = new Map(this.state.childStreams);
+    childStreams.set(sessionID, { ...initialStreamingState });
+    this.state = { ...this.state, watchedChildren, childStreams };
+    this.commit();
+    this.ensureChildMessages(sessionID);
+  }
+
+  unwatchChild(sessionID: string): void {
+    if (!this.state.watchedChildren.has(sessionID)) return;
+    const watchedChildren = new Set(this.state.watchedChildren);
+    watchedChildren.delete(sessionID);
+    const childStreams = new Map(this.state.childStreams);
+    childStreams.delete(sessionID);
+    this.state = { ...this.state, watchedChildren, childStreams };
+    this.commit();
+  }
+
+  private handleChildEvent(sessionID: string, event: Event): void {
+    if (event.type === "session.idle") {
+      const childStreams = new Map(this.state.childStreams);
+      childStreams.delete(sessionID);
+      this.state = { ...this.state, childStreams };
+      this.commit();
+      void this.reloadChildMessages(sessionID);
+      return;
+    }
+
+    const stream = this.state.childStreams.get(sessionID);
+    if (!stream) return;
+
+    const next = reduce(stream, event as StreamEvent);
+    if (next === stream) return;
+
+    const childStreams = new Map(this.state.childStreams);
+    childStreams.set(sessionID, next);
+    this.state = { ...this.state, childStreams };
+    this.commit();
+  }
+
+  private async reloadChildMessages(sessionID: string): Promise<void> {
+    try {
+      const r = await this.sdk.session.messages({ path: { id: sessionID } });
+      if (r.error) throw r.error;
+      const msgs = messagesToBubbles(
+        (r.data ?? []) as readonly MessageWithParts[],
+      );
+      const childMessages = new Map(this.state.childMessages);
+      childMessages.set(sessionID, msgs);
+      this.state = { ...this.state, childMessages };
+      this.commit();
+    } catch {
+      // keep cached messages
+    }
+  }
+
   async loadProviders(): Promise<void> {
     if (this.state.providersLoading) return;
     this.state = { ...this.state, providersLoading: true };
@@ -629,7 +705,14 @@ export class OpencodeStore {
     }
 
     const sid = extractSessionID(event);
-    if (!sid || sid !== this.state.sessionID) return;
+    if (!sid) return;
+
+    if (sid !== this.state.sessionID) {
+      if (this.state.watchedChildren.has(sid)) {
+        this.handleChildEvent(sid, event);
+      }
+      return;
+    }
     if (!this.state.streaming) return;
 
     const prev = this.state.streaming;

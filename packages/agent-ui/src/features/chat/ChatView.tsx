@@ -43,7 +43,8 @@ export const AgentChat = () => {
 
   useEffect(() => {
     if (subagentSession) {
-      store.ensureChildMessages(subagentSession.id);
+      store.watchChild(subagentSession.id);
+      return () => store.unwatchChild(subagentSession.id);
     }
   }, [subagentSession]);
 
@@ -74,7 +75,7 @@ export const AgentChat = () => {
           <PromptSuggestions onPick={(label) => void store.send(label)} />
         ) : (
           <MessageList
-            store={store}
+            messages={messages}
             onRevert={handleRevert}
             onSubtaskClick={handleSubtaskClick}
           />

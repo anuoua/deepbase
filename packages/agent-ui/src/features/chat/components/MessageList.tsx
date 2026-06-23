@@ -1,47 +1,29 @@
 import { useRef } from "react";
-import { Spin, Flex } from "antd";
-import {
-  useOpencode,
-  selectors,
-  type OpencodeStore,
-  type Bubble,
-} from "../../../lib/opencode-store";
+import type { Bubble } from "../../../lib/opencode-store";
 import { useAutoScroll } from "../hooks/useAutoScroll";
 import { MessageItem } from "./MessageItem";
 import { useDesignTokens } from "../hooks/useDesignTokens";
 
 export function MessageList({
-  store,
+  messages,
   readonly,
   onRevert,
   onSubtaskClick,
 }: {
-  store: OpencodeStore;
+  messages: readonly Bubble[];
   readonly?: boolean;
   onRevert?: (messageID: string) => void;
   onSubtaskClick?: (sessionID: string) => void;
 }) {
   const t = useDesignTokens();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const messages = useOpencode(store, selectors.messages);
 
   useAutoScroll(scrollRef, [messages]);
 
   const effectiveRevert = readonly ? undefined : onRevert;
   const effectiveSubtask = readonly ? undefined : onSubtaskClick;
 
-  if (messages.length === 0) {
-    return (
-      <Flex
-        flex={1}
-        align="center"
-        justify="center"
-        style={{ color: t.color.textTertiary }}
-      >
-        <Spin />
-      </Flex>
-    );
-  }
+  if (messages.length === 0) return null;
 
   return (
     <div
