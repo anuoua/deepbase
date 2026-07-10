@@ -25,7 +25,9 @@ export const ProPrismaUpdateDataDemo = () => {
       <p style={{ marginBottom: 16, color: "#666" }}>
         Build Prisma <code>update</code> data. All fields are opt-in via
         checkbox. Relations support <code>create</code>, <code>connect</code>,{" "}
-        <code>disconnect</code>, <code>delete</code>, and <code>update</code>.
+        <code>connectOrCreate</code>, <code>disconnect</code>,{" "}
+        <code>delete</code>, <code>update</code>, <code>updateMany</code>,{" "}
+        <code>deleteMany</code>, <code>upsert</code>, and <code>set</code>.
       </p>
       <ProPrismaUpdateData
         fields={userUpdateFields}

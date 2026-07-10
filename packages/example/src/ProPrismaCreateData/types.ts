@@ -56,6 +56,44 @@ export function toPrismaCreateData(
             result[field.name] = { connect: ids.map((id) => ({ id: Number(id) })) };
           }
         }
+      } else if (r.mode === "connectOrCreate") {
+        if (isToOne(field)) {
+          const whereId = r.whereId;
+          if (whereId !== undefined && whereId !== null && whereId !== "") {
+            const data = r.data as Record<string, unknown>;
+            const nested = toPrismaCreateData(data ?? {}, resolveChildren(field));
+            if (Object.keys(nested).length > 0) {
+              result[field.name] = {
+                connectOrCreate: { where: { id: Number(whereId) }, create: nested },
+              };
+            }
+          }
+        } else {
+          const items = r.items as {
+            whereId?: number;
+            data?: Record<string, unknown>;
+          }[];
+          if (Array.isArray(items) && items.length > 0) {
+            const entries = items
+              .map((item) => {
+                const whereId = item.whereId;
+                if (whereId === undefined || whereId === null) return null;
+                const nested = toPrismaCreateData(
+                  item.data ?? {},
+                  resolveChildren(field),
+                );
+                if (Object.keys(nested).length === 0) return null;
+                return { where: { id: Number(whereId) }, create: nested };
+              })
+              .filter(
+                (x): x is { where: { id: number }; create: Record<string, unknown> } =>
+                  x !== null,
+              );
+            if (entries.length > 0) {
+              result[field.name] = { connectOrCreate: entries };
+            }
+          }
+        }
       } else {
         if (isToOne(field)) {
           const data = r.data as Record<string, unknown>;

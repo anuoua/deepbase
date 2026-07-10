@@ -122,12 +122,14 @@ function CreateRelationEditor({
   label: string;
 }) {
   const r = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
-  const mode = (r.mode as "create" | "connect") ?? "create";
+  const mode = (r.mode as "create" | "connect" | "connectOrCreate") ?? "create";
 
   const data = useMemo(() => (r.data as Record<string, unknown>) ?? {}, [r.data]);
   const items = useMemo(() => {
     const raw = r.items;
-    return Array.isArray(raw) ? (raw as Record<string, unknown>[]) : [];
+    return Array.isArray(raw)
+      ? (raw as { whereId?: number; data?: Record<string, unknown> }[])
+      : [];
   }, [r.items]);
   const id = r.id as number | undefined;
   const ids = useMemo(() => {
@@ -139,6 +141,12 @@ function CreateRelationEditor({
     (newMode: string) => {
       if (newMode === "create") {
         onChange({ mode: "create" });
+      } else if (newMode === "connectOrCreate") {
+        if (toMany) {
+          onChange({ mode: "connectOrCreate", items: [] });
+        } else {
+          onChange({ mode: "connectOrCreate", whereId: undefined, data: {} });
+        }
       } else {
         if (toMany) {
           onChange({ mode: "connect", ids: [] });
@@ -204,7 +212,7 @@ function CreateRelationEditor({
     <div style={{ marginLeft: 16, marginTop: 8 }}>
       <div style={{ marginBottom: 8 }}>
         <Segmented
-          options={["create", "connect"]}
+          options={["create", "connect", "connectOrCreate"]}
           value={mode}
           onChange={handleModeChange}
           size="small"
@@ -229,6 +237,112 @@ function CreateRelationEditor({
           value={ids}
           onChange={handleIdsChange}
         />
+      )}
+
+      {mode === "connectOrCreate" && !toMany && (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 12, marginRight: 8, color: "#333" }}>where ID:</span>
+            <InputNumber
+              placeholder="Record ID"
+              style={{ minWidth: 120 }}
+              value={(r.whereId as number) ?? null}
+              onChange={(v) =>
+                onChange({ mode: "connectOrCreate", whereId: v ?? undefined, data })
+              }
+            />
+          </div>
+          <div style={{ marginBottom: 4, fontWeight: 500, color: "#666", fontSize: 12 }}>
+            create data:
+          </div>
+          <CreateFieldsForm
+            fields={fields}
+            value={data}
+            onChange={(v) =>
+              onChange({ mode: "connectOrCreate", whereId: r.whereId, data: v })
+            }
+          />
+        </div>
+      )}
+
+      {mode === "connectOrCreate" && toMany && (
+        <div>
+          {items.map((item, index) => (
+            <div
+              key={index}
+              style={{
+                border: "1px solid #d9d9d9",
+                borderRadius: 6,
+                padding: 12,
+                marginBottom: 8,
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  marginBottom: 8,
+                  fontWeight: 500,
+                  color: "#666",
+                  fontSize: 12,
+                }}
+              >
+                Item {index + 1}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 12, marginRight: 8, color: "#333" }}>
+                  where ID:
+                </span>
+                <InputNumber
+                  placeholder="Record ID"
+                  style={{ minWidth: 120 }}
+                  value={item.whereId ?? null}
+                  onChange={(v) => {
+                    const arr = [...items];
+                    const { whereId: _, ...rest } = item;
+                    arr[index] = v !== null ? { ...rest, whereId: v } : rest;
+                    onChange({ mode: "connectOrCreate", items: arr });
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: 4, fontWeight: 500, color: "#666", fontSize: 12 }}>
+                create data:
+              </div>
+              <CreateFieldsForm
+                fields={fields}
+                value={item.data ?? {}}
+                onChange={(v) => {
+                  const arr = [...items];
+                  arr[index] = { ...item, data: v };
+                  onChange({ mode: "connectOrCreate", items: arr });
+                }}
+              />
+              <Button
+                danger
+                size="small"
+                type="text"
+                style={{ position: "absolute", top: 4, right: 4 }}
+                onClick={() => {
+                  const arr = items.filter((_, i) => i !== index);
+                  onChange({ mode: "connectOrCreate", items: arr });
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+          ))}
+          <Button
+            size="small"
+            type="dashed"
+            onClick={() =>
+              onChange({
+                mode: "connectOrCreate",
+                items: [...items, { whereId: undefined, data: {} }],
+              })
+            }
+          >
+            + Add Item
+          </Button>
+        </div>
       )}
 
       {mode === "create" && !toMany && (

@@ -88,7 +88,7 @@ export function toPrismaUpdateData(
           if (data && typeof data === "object") {
             const nested = toPrismaUpdateData(data, resolveChildren(field));
             if (Object.keys(nested).length > 0) {
-              result[field.name] = { update: { data: nested } };
+              result[field.name] = { update: nested };
             }
           }
         } else {
@@ -119,6 +119,127 @@ export function toPrismaUpdateData(
             if (updates.length > 0) {
               result[field.name] = { update: updates };
             }
+          }
+        }
+      } else if (mode === "connectOrCreate") {
+        if (isToOne(field)) {
+          const whereId = r.whereId;
+          if (whereId !== undefined && whereId !== null && whereId !== "") {
+            const data = r.data as Record<string, unknown>;
+            const nested = toPrismaUpdateData(data ?? {}, resolveChildren(field));
+            if (Object.keys(nested).length > 0) {
+              result[field.name] = {
+                connectOrCreate: { where: { id: Number(whereId) }, create: nested },
+              };
+            }
+          }
+        } else {
+          const items = r.items as {
+            whereId?: number;
+            data?: Record<string, unknown>;
+          }[];
+          if (Array.isArray(items) && items.length > 0) {
+            const entries = items
+              .map((item) => {
+                const whereId = item.whereId;
+                if (whereId === undefined || whereId === null) return null;
+                const nested = toPrismaUpdateData(
+                  item.data ?? {},
+                  resolveChildren(field),
+                );
+                if (Object.keys(nested).length === 0) return null;
+                return { where: { id: Number(whereId) }, create: nested };
+              })
+              .filter(
+                (x): x is { where: { id: number }; create: Record<string, unknown> } =>
+                  x !== null,
+              );
+            if (entries.length > 0) {
+              result[field.name] = { connectOrCreate: entries };
+            }
+          }
+        }
+      } else if (mode === "upsert") {
+        if (isToOne(field)) {
+          const createData = r.createData as Record<string, unknown>;
+          const updateData = r.updateData as Record<string, unknown>;
+          const createNested = toPrismaUpdateData(createData ?? {}, resolveChildren(field));
+          const updateNested = toPrismaUpdateData(updateData ?? {}, resolveChildren(field));
+          if (Object.keys(createNested).length > 0 || Object.keys(updateNested).length > 0) {
+            result[field.name] = { upsert: { create: createNested, update: updateNested } };
+          }
+        } else {
+          const items = r.items as {
+            whereId?: number;
+            createData?: Record<string, unknown>;
+            updateData?: Record<string, unknown>;
+          }[];
+          if (Array.isArray(items) && items.length > 0) {
+            const entries = items
+              .map((item) => {
+                const whereId = item.whereId;
+                if (whereId === undefined || whereId === null) return null;
+                const createNested = toPrismaUpdateData(
+                  item.createData ?? {},
+                  resolveChildren(field),
+                );
+                const updateNested = toPrismaUpdateData(
+                  item.updateData ?? {},
+                  resolveChildren(field),
+                );
+                if (
+                  Object.keys(createNested).length === 0 &&
+                  Object.keys(updateNested).length === 0
+                )
+                  return null;
+                return {
+                  where: { id: Number(whereId) },
+                  create: createNested,
+                  update: updateNested,
+                };
+              })
+              .filter(
+                (
+                  x,
+                ): x is {
+                  where: { id: number };
+                  create: Record<string, unknown>;
+                  update: Record<string, unknown>;
+                } => x !== null,
+              );
+            if (entries.length > 0) {
+              result[field.name] = { upsert: entries };
+            }
+          }
+        }
+      } else if (mode === "set") {
+        if (isToOne(field)) {
+          const id = r.id;
+          if (id !== undefined && id !== null && id !== "") {
+            result[field.name] = { set: { id: Number(id) } };
+          }
+        } else {
+          const ids = r.ids as unknown[];
+          if (Array.isArray(ids) && ids.length > 0) {
+            result[field.name] = { set: ids.map((id) => ({ id: Number(id) })) };
+          }
+        }
+      } else if (mode === "updateMany") {
+        const where = r.where as Record<string, unknown>;
+        const data = r.data as Record<string, unknown>;
+        const whereFilter = where && typeof where === "object" ? where : {};
+        const nested = toPrismaUpdateData(data ?? {}, resolveChildren(field));
+        if (Object.keys(nested).length > 0) {
+          result[field.name] = { updateMany: { where: whereFilter, data: nested } };
+        }
+      } else if (mode === "deleteMany") {
+        if (r.all === true) {
+          result[field.name] = { deleteMany: true };
+        } else {
+          const where = r.where as Record<string, unknown>;
+          const whereFilter = where && typeof where === "object" ? where : {};
+          if (Object.keys(whereFilter).length > 0) {
+            result[field.name] = { deleteMany: whereFilter };
           }
         }
       }

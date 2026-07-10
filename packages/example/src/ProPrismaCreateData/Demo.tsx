@@ -35,7 +35,8 @@ export const ProPrismaCreateDataDemo = () => {
       <h1 style={{ marginBottom: 24 }}>Prisma Create Data Builder</h1>
       <p style={{ marginBottom: 16, color: "#666" }}>
         Build Prisma <code>create</code> data. Required fields are shown by
-        default; optional fields have a toggle. Relations support nested create.
+        default; optional fields have a toggle. Relations support nested create,
+        connect, and connectOrCreate.
       </p>
       <ProPrismaCreateData
         fields={userCreateFields}
