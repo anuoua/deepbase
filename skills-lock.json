@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "json-explorer": {
+      "source": "git@github.com:anuoua/skills.git",
+      "sourceType": "git",
+      "skillPath": "skills/json-explorer/SKILL.md",
+      "computedHash": "9582ec78118f9619e2e053806c2a4728c855e8f39e38891ba584f8284de3ee7d"
+    },
+    "prisma-cli": {
+      "source": "git@github.com:prisma/skills.git",
+      "sourceType": "git",
+      "skillPath": "prisma-cli/SKILL.md",
+      "computedHash": "1cfdc0011df8699a2ece587f229a1e892df2a9a3eec40b5407492cb4c6570e95"
+    },
+    "prisma-client-api": {
+      "source": "git@github.com:prisma/skills.git",
+      "sourceType": "git",
+      "skillPath": "prisma-client-api/SKILL.md",
+      "computedHash": "0434410e48fb796bbdc3ad0050654bfc9cf72c89b30dbad098ee5c9f655b7f85"
+    }
+  }
+}
