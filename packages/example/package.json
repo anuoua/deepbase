@@ -1,0 +1,53 @@
+{
+  "name": "@pro-hooks/example",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Ant Design integration for pro-hooks",
+  "type": "module",
+  "exports": {
+    "./ProForm": {
+      "types": "./dist/ProForm/index.d.mts",
+      "import": "./dist/ProForm/index.mjs"
+    },
+    "./ProSelect": {
+      "types": "./dist/ProSelect/index.d.mts",
+      "import": "./dist/ProSelect/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "vitest --run --passWithNoTests",
+    "build": "tsdown",
+    "dev": "vite",
+    "prepublishOnly": "pnpm run build"
+  },
+  "author": "anuoua <anuoua@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anuoua/pro-hooks.git",
+    "directory": "packages/antd"
+  },
+  "peerDependencies": {
+    "antd": ">=5",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.2.3",
+    "antd": "^6.4.2",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tsdown": "^0.22.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "vitest": "^3.2.1"
+  },
+  "dependencies": {
+    "@prisma/get-dmmf": "^7.8.0"
+  }
+}
