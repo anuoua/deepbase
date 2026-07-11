@@ -1,6 +1,6 @@
 import { Collapse, Input, InputNumber, Tree } from "antd";
-import type { TreeDataNode } from "antd";
-import { useCallback, useMemo } from "react";
+import type { TreeDataNode, TreeProps } from "antd";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   hasChildren,
   resolveChildren,
@@ -19,15 +19,44 @@ interface ProPrismaIncludeProps {
 function buildTreeData(fields: IncludeFieldConfig[], prefix = ""): TreeDataNode[] {
   return fields.filter(hasChildren).map((field) => {
     const key = prefix ? `${prefix}.${field.name}` : field.name;
-    const childFields = resolveChildren(field);
     const node: TreeDataNode = {
       key,
       title: field.label,
-      isLeaf: !childFields.some(hasChildren),
+      isLeaf: false,
     };
-    const nestedRelations = childFields.filter(hasChildren);
-    if (nestedRelations.length > 0) {
-      node.children = buildTreeData(nestedRelations, key);
+    if (Array.isArray(field.children)) {
+      const nestedRelations = field.children.filter(hasChildren);
+      node.children = nestedRelations.length > 0 ? buildTreeData(nestedRelations, key) : [];
+    }
+    return node;
+  });
+}
+
+function collectGetters(
+  fields: IncludeFieldConfig[],
+  map: Map<string, () => IncludeFieldConfig[]>,
+  prefix = "",
+) {
+  for (const f of fields) {
+    if (!hasChildren(f)) continue;
+    const key = prefix ? `${prefix}.${f.name}` : f.name;
+    if (typeof f.children === "function") {
+      map.set(key, f.children);
+    }
+  }
+}
+
+function addChildren(
+  nodes: TreeDataNode[],
+  targetKey: string,
+  children: TreeDataNode[],
+): TreeDataNode[] {
+  return nodes.map((node) => {
+    if (node.key === targetKey) {
+      return { ...node, children };
+    }
+    if (node.children) {
+      return { ...node, children: addChildren(node.children, targetKey, children) };
     }
     return node;
   });
@@ -39,7 +68,31 @@ function getRelationFields(fields: IncludeFieldConfig[]): string[] {
 
 export function ProPrismaInclude({ fields, value, onChange }: ProPrismaIncludeProps) {
   const relationFields = useMemo(() => getRelationFields(fields), [fields]);
-  const treeData = useMemo(() => buildTreeData(fields), [fields]);
+  const getterMapRef = useRef(new Map<string, () => IncludeFieldConfig[]>());
+
+  const [baseTreeData, setBaseTreeData] = useState<TreeDataNode[]>(() => {
+    const map = new Map<string, () => IncludeFieldConfig[]>();
+    collectGetters(fields, map);
+    getterMapRef.current = map;
+    return buildTreeData(fields);
+  });
+
+  const treeData = useMemo(() => baseTreeData, [baseTreeData]);
+
+  const onLoadData: NonNullable<TreeProps["loadData"]> = useCallback((node) => {
+    const key = node.key as string;
+    const getter = getterMapRef.current.get(key);
+    if (!getter) return Promise.resolve();
+
+    const resolvedFields = getter();
+    const childNodes = buildTreeData(resolvedFields, key);
+    collectGetters(resolvedFields, getterMapRef.current, key);
+
+    return new Promise<void>((resolve) => {
+      setBaseTreeData((prev) => addChildren(prev, key, childNodes));
+      setTimeout(resolve, 0);
+    });
+  }, []);
 
   const checkedKeys = useMemo(() => {
     return Object.entries(value)
@@ -88,6 +141,7 @@ export function ProPrismaInclude({ fields, value, onChange }: ProPrismaIncludePr
         treeData={treeData}
         checkedKeys={checkedKeys}
         onCheck={handleCheck}
+        loadData={onLoadData}
         selectable={false}
       />
 
