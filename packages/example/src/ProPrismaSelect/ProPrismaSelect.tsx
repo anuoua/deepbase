@@ -1,4 +1,4 @@
-import { Tree } from "antd";
+import { Checkbox, Select, Tree } from "antd";
 import type { TreeDataNode, TreeProps } from "antd";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -93,6 +93,7 @@ function addChildren(
 function valueToCheckedKeys(value: SelectValue, prefix = ""): string[] {
   const keys: string[] = [];
   for (const [name, val] of Object.entries(value)) {
+    if (name === "_count") continue;
     const key = prefix ? `${prefix}.${name}` : name;
     keys.push(key);
     if (val && typeof val === "object" && "select" in val) {
@@ -170,9 +171,13 @@ export function ProPrismaSelect({
     (keys: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }) => {
       const checked = (Array.isArray(keys) ? keys : keys.checked) as string[];
       const newValue = checkedKeysToValue(checked, fields);
+      const prev = value as Record<string, unknown>;
+      if (prev._count) {
+        (newValue as Record<string, unknown>)._count = prev._count;
+      }
       onChange(newValue);
     },
-    [fields, onChange],
+    [fields, value, onChange],
   );
 
   const onLoadData: NonNullable<TreeProps["loadData"]> = useCallback(
@@ -194,6 +199,44 @@ export function ProPrismaSelect({
     [],
   );
 
+  const relationFieldOptions = useMemo(
+    () =>
+      fields.filter((f) => hasChildren(f)).map((f) => ({ label: f.label, value: f.name })),
+    [fields],
+  );
+
+  const countValue = (value as Record<string, unknown>)._count;
+  const countIncluded = countValue !== undefined && countValue !== false;
+  const countSelectedFields: string[] =
+    countValue && typeof countValue === "object" && "select" in countValue
+      ? Object.entries((countValue as { select: Record<string, boolean> }).select)
+          .filter(([, v]) => v)
+          .map(([k]) => k)
+      : [];
+
+  const handleCountToggle = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        onChange({ ...value, _count: { select: {} } });
+      } else {
+        const { _count: _removed, ...rest } = value as Record<string, unknown>;
+        onChange(rest as SelectValue);
+      }
+    },
+    [value, onChange],
+  );
+
+  const handleCountFieldsChange = useCallback(
+    (selected: string[]) => {
+      const select: Record<string, boolean> = {};
+      for (const name of selected) {
+        select[name] = true;
+      }
+      onChange({ ...value, _count: { select } });
+    },
+    [value, onChange],
+  );
+
   return (
     <div>
       <Tree
@@ -206,6 +249,30 @@ export function ProPrismaSelect({
         disabled={disabled}
         selectable={false}
       />
+
+      {relationFieldOptions.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <Checkbox
+            checked={countIncluded}
+            disabled={disabled}
+            onChange={(e) => handleCountToggle(e.target.checked)}
+          >
+            Include _count
+          </Checkbox>
+          {countIncluded && (
+            <Select
+              allowClear
+              disabled={disabled}
+              mode="multiple"
+              options={relationFieldOptions}
+              placeholder="Select relations to count"
+              style={{ minWidth: 250, marginLeft: 8 }}
+              value={countSelectedFields}
+              onChange={handleCountFieldsChange}
+            />
+          )}
+        </div>
+      )}
 
       <div
         style={{

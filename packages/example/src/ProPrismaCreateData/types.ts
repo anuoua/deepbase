@@ -1,7 +1,7 @@
 export interface CreateFieldConfig {
   name: string;
   label: string;
-  type?: "string" | "number" | "boolean" | "date" | "enum";
+  type?: "string" | "number" | "boolean" | "date" | "enum" | "json";
   enums?: { label: string; value: string | number }[];
   isList?: boolean;
   isRequired?: boolean;

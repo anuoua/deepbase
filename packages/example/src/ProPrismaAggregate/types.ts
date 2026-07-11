@@ -1,7 +1,7 @@
 export interface AggregateFieldConfig {
   name: string;
   label: string;
-  type: "string" | "number" | "boolean" | "date" | "enum";
+  type: "string" | "number" | "boolean" | "date" | "enum" | "json";
 }
 
 export type AggregateOp = "_sum" | "_avg" | "_min" | "_max" | "_count";

@@ -15,7 +15,9 @@ export function hasChildren(field: SelectFieldConfig): boolean {
   return !!field.children;
 }
 
-export type SelectValue = Record<string, boolean | { select: SelectValue }>;
+export type SelectValue = {
+  [fieldName: string]: boolean | { select: SelectValue };
+} & { _count?: boolean | { select: Record<string, boolean> } };
 
 export function toPrismaSelect(
   value: SelectValue,
@@ -37,6 +39,15 @@ export function toPrismaSelect(
       result[field.name] = {
         select: toPrismaSelect(fieldValue.select, resolveChildren(field)),
       };
+    }
+  }
+
+  const val = value as Record<string, unknown>;
+  if (val._count) {
+    if (val._count === true) {
+      result._count = true;
+    } else if (typeof val._count === "object" && val._count !== null && "select" in val._count) {
+      result._count = { select: (val._count as { select: Record<string, boolean> }).select };
     }
   }
 

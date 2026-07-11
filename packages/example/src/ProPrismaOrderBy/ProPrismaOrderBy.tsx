@@ -1,4 +1,4 @@
-import { Button, Select } from "antd";
+import { Button, Checkbox, Select } from "antd";
 import { useCallback, useMemo } from "react";
 import {
   resolveChildren,
@@ -58,6 +58,30 @@ function OrderByEntryEditor({
     [entry, onChange],
   );
 
+  const handleCountSortChange = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        onChange({ ...entry, countSort: true });
+      } else {
+        const { countSort: _, ...rest } = entry;
+        onChange(rest);
+      }
+    },
+    [entry, onChange],
+  );
+
+  const handleNullsChange = useCallback(
+    (nulls: string) => {
+      if (nulls === "none") {
+        const { nulls: _n, ...rest } = entry;
+        onChange(rest);
+      } else {
+        onChange({ ...entry, nulls: nulls as "first" | "last" });
+      }
+    },
+    [entry, onChange],
+  );
+
   const fieldOptions = useMemo(
     () => fields.map((f) => ({ label: f.label, value: f.name })),
     [fields],
@@ -98,7 +122,31 @@ function OrderByEntryEditor({
         </Button>
       </div>
 
-      {isRelation && entry.children && (
+      <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 4, marginLeft: 4 }}>
+        {isRelation && (
+          <Checkbox
+            checked={entry.countSort === true}
+            onChange={(e) => handleCountSortChange(e.target.checked)}
+          >
+            Sort by count
+          </Checkbox>
+        )}
+        {!isRelation && (
+          <Select
+            allowClear={false}
+            options={[
+              { label: "nulls: default", value: "none" },
+              { label: "nulls: first", value: "first" },
+              { label: "nulls: last", value: "last" },
+            ]}
+            style={{ minWidth: 150 }}
+            value={entry.nulls ?? "none"}
+            onChange={handleNullsChange}
+          />
+        )}
+      </div>
+
+      {isRelation && !entry.countSort && entry.children && (
         <OrderByListEditor
           fields={resolveChildren(fieldConfig!)}
           value={entry.children}

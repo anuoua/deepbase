@@ -66,6 +66,8 @@ function dmmfTypeToFieldType(dmmfType: string): FieldType {
       return "boolean";
     case "DateTime":
       return "date";
+    case "Json":
+      return "json";
     default:
       return "string";
   }

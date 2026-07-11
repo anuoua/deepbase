@@ -17,6 +17,8 @@ export interface OrderByEntry {
   field: string;
   direction: "asc" | "desc";
   children?: OrderByEntry[];
+  nulls?: "first" | "last";
+  countSort?: boolean;
 }
 
 export type OrderByValue = OrderByEntry[];
@@ -30,12 +32,16 @@ export function toPrismaOrderBy(
     const fieldConfig = fields.find((f) => f.name === entry.field);
     if (!fieldConfig) continue;
 
-    if (hasChildren(fieldConfig) && entry.children && entry.children.length > 0) {
+    if (hasChildren(fieldConfig) && entry.countSort) {
+      result.push({ [entry.field]: { _count: entry.direction } });
+    } else if (hasChildren(fieldConfig) && entry.children && entry.children.length > 0) {
       const nested: Record<string, unknown> = {};
       for (const child of entry.children) {
         nested[child.field] = child.direction;
       }
       result.push({ [entry.field]: nested });
+    } else if (entry.nulls) {
+      result.push({ [entry.field]: { sort: entry.direction, nulls: entry.nulls } });
     } else {
       result.push({ [entry.field]: entry.direction });
     }

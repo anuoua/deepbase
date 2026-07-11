@@ -1,4 +1,4 @@
-export type FieldType = "string" | "number" | "boolean" | "date" | "enum";
+export type FieldType = "string" | "number" | "boolean" | "date" | "enum" | "json";
 
 export interface FieldConfig {
   name: string;
@@ -113,6 +113,15 @@ export const ENUM_OPERATORS: { label: string; value: string }[] = [
   { label: "notIn", value: "notIn" },
 ];
 
+export const JSON_OPERATORS: { label: string; value: string }[] = [
+  { label: "path (equals)", value: "path_equals" },
+  { label: "string_contains", value: "string_contains" },
+];
+
+export const FULLTEXT_OPERATORS: { label: string; value: string }[] = [
+  { label: "search", value: "search" },
+];
+
 export const TO_MANY_OPERATORS: { label: string; value: string }[] = [
   { label: "some (at least one)", value: "some" },
   { label: "every (all)", value: "every" },
@@ -170,8 +179,14 @@ export function getOperatorsByType(field: FieldConfig): { label: string; value: 
     case "enum":
       ops = ENUM_OPERATORS;
       break;
+    case "json":
+      ops = JSON_OPERATORS;
+      break;
     default:
       ops = STRING_OPERATORS;
+  }
+  if (field.type === "string") {
+    ops = [...ops, ...FULLTEXT_OPERATORS];
   }
   if (field.isRequired === false) {
     ops = [...ops, ...OPTIONAL_SCALAR_OPERATORS];
@@ -197,6 +212,8 @@ export function getDefaultOperator(field: FieldConfig): string {
       return "equals";
     case "enum":
       return "equals";
+    case "json":
+      return "path_equals";
     default:
       return "equals";
   }
@@ -259,7 +276,28 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
     if (node.operator === "isEmpty") {
       return { [node.field]: { isEmpty: Boolean(value) } };
     }
-    if (node.operator === "equals") {
+  // JSON path filters
+  if (node.operator === "path_equals") {
+    const v = value as { path?: string[]; equals?: unknown };
+    if (v && Array.isArray(v.path) && v.equals !== undefined) {
+      return { [node.field]: { path: v.path, equals: v.equals } };
+    }
+    return {};
+  }
+  if (node.operator === "string_contains") {
+    const v = value as { path?: string[]; string_contains?: string };
+    if (v && Array.isArray(v.path) && typeof v.string_contains === "string") {
+      return { [node.field]: { path: v.path, string_contains: v.string_contains } };
+    }
+    return {};
+  }
+
+  // Full-text search
+  if (node.operator === "search") {
+    return { [node.field]: { search: value } };
+  }
+
+  if (node.operator === "equals") {
       if (!Array.isArray(value) || value.length === 0) return {};
       return { [node.field]: { equals: value } };
     }

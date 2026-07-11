@@ -348,6 +348,68 @@ function ValueInput({ fieldConfig, operator, value, onChange }: ValueInputProps)
   const multiple = canBeMultipleValue(operator);
   const isListEquals = fieldConfig.isList && operator === "equals";
 
+  if (operator === "path_equals") {
+    const v = (value as { path?: string[]; equals?: string }) ?? {};
+    return (
+      <Space direction="vertical" style={{ width: "100%", flex: 1 }}>
+        <Input
+          placeholder="JSON path (comma-separated, e.g. settings,theme)"
+          style={{ minWidth: 200 }}
+          value={v.path?.join(",") ?? ""}
+          onChange={(e) =>
+            onChange({
+              path: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+              equals: v.equals,
+            })
+          }
+        />
+        <Input
+          placeholder="Equals value"
+          style={{ minWidth: 200 }}
+          value={(v.equals as string) ?? ""}
+          onChange={(e) => onChange({ path: v.path, equals: e.target.value })}
+        />
+      </Space>
+    );
+  }
+
+  if (operator === "string_contains") {
+    const v = (value as { path?: string[]; string_contains?: string }) ?? {};
+    return (
+      <Space direction="vertical" style={{ width: "100%", flex: 1 }}>
+        <Input
+          placeholder="JSON path (comma-separated)"
+          style={{ minWidth: 200 }}
+          value={v.path?.join(",") ?? ""}
+          onChange={(e) =>
+            onChange({
+              path: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+              string_contains: v.string_contains,
+            })
+          }
+        />
+        <Input
+          placeholder="Contains text"
+          style={{ minWidth: 200 }}
+          value={(v.string_contains as string) ?? ""}
+          onChange={(e) => onChange({ path: v.path, string_contains: e.target.value })}
+        />
+      </Space>
+    );
+  }
+
+  if (operator === "search") {
+    return (
+      <Input
+        allowClear
+        placeholder="Search query"
+        style={{ minWidth: 200, flex: 1 }}
+        value={(value as string) ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+      />
+    );
+  }
+
   if (operator === "isEmpty" || operator === "isSet") {
     return (
       <Select
