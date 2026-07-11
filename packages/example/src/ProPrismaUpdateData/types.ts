@@ -248,7 +248,16 @@ export function toPrismaUpdateData(
         result[field.name] = val;
       }
     } else {
-      result[field.name] = val;
+      // Detect atomic operation: { _atomic: "increment", _value: 1 }
+      if (val && typeof val === "object" && "_atomic" in val) {
+        const r = val as { _atomic: string; _value: number };
+        const numVal = Number(r._value);
+        if (!isNaN(numVal)) {
+          result[field.name] = { [r._atomic]: numVal };
+        }
+      } else {
+        result[field.name] = val;
+      }
     }
   }
   return result;

@@ -51,6 +51,61 @@ function UpdateFieldInput({
     );
   }
 
+  // number type: support atomic operations
+  if (field.type === "number") {
+    const isAtomic = value && typeof value === "object" && "_atomic" in value;
+    const r = isAtomic ? (value as { _atomic: string; _value: number }) : null;
+
+    return (
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+        <Segmented
+          size="small"
+          options={[
+            { label: "Set", value: "set" },
+            { label: "Atomic", value: "atomic" },
+          ]}
+          value={isAtomic ? "atomic" : "set"}
+          onChange={(v) => {
+            if (v === "atomic") {
+              onChange({ _atomic: "increment", _value: 1 });
+            } else {
+              onChange(null);
+            }
+          }}
+        />
+        {isAtomic ? (
+          <>
+            <Select
+              size="small"
+              style={{ minWidth: 120 }}
+              options={[
+                { label: "increment", value: "increment" },
+                { label: "decrement", value: "decrement" },
+                { label: "multiply", value: "multiply" },
+                { label: "divide", value: "divide" },
+              ]}
+              value={r?._atomic ?? "increment"}
+              onChange={(v) => onChange({ _atomic: v, _value: r?._value ?? 1 })}
+            />
+            <InputNumber
+              size="small"
+              style={{ minWidth: 100 }}
+              value={r?._value ?? null}
+              onChange={(v) => onChange({ _atomic: r?._atomic ?? "increment", _value: v ?? 0 })}
+            />
+          </>
+        ) : (
+          <InputNumber
+            placeholder={`Enter ${field.label.toLowerCase()}`}
+            style={{ minWidth: 200, flex: 1 }}
+            value={(value as number) ?? null}
+            onChange={(v) => onChange(v)}
+          />
+        )}
+      </div>
+    );
+  }
+
   switch (field.type) {
     case "string":
       return (
@@ -60,15 +115,6 @@ function UpdateFieldInput({
           style={{ minWidth: 200, flex: 1 }}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
-        />
-      );
-    case "number":
-      return (
-        <InputNumber
-          placeholder={`Enter ${field.label.toLowerCase()}`}
-          style={{ minWidth: 200, flex: 1 }}
-          value={(value as number) ?? null}
-          onChange={(v) => onChange(v)}
         />
       );
     case "boolean":
