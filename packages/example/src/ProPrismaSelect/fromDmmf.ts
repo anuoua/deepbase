@@ -2,6 +2,7 @@ import type { SelectFieldConfig } from "../ProPrismaSelect/types";
 import type { FieldConfig, FieldType } from "../ProPrismaWhere/types";
 import type { OrderByFieldConfig } from "../ProPrismaOrderBy/types";
 import type { CreateFieldConfig } from "../ProPrismaCreateData/types";
+import type { IncludeFieldConfig } from "../ProPrismaInclude/types";
 
 export interface DmmfField {
   name: string;
@@ -222,6 +223,33 @@ export function dmmfToCreateFields(
         type: dmmfTypeToFieldType(field.type),
         isRequired: field.isRequired,
         ...(field.isList ? { isList: true } : {}),
+      });
+    }
+  }
+
+  return result;
+}
+
+export function dmmfToIncludeFields(
+  document: DmmfDocument,
+  modelName: string,
+): IncludeFieldConfig[] {
+  const model = document.datamodel.models.find((m) => m.name === modelName);
+  if (!model) {
+    throw new Error(`Model "${modelName}" not found in DMMF document`);
+  }
+
+  const result: IncludeFieldConfig[] = [];
+
+  for (const field of model.fields) {
+    if (field.isReadOnly) continue;
+
+    if (field.kind === "object") {
+      result.push({
+        name: field.name,
+        label: prettify(field.name),
+        isList: field.isList,
+        children: () => dmmfToIncludeFields(document, field.type),
       });
     }
   }
