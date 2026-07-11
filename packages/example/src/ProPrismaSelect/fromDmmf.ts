@@ -5,6 +5,8 @@ import type { CreateFieldConfig } from "../ProPrismaCreateData/types";
 import type { IncludeFieldConfig } from "../ProPrismaInclude/types";
 import type { UniqueFieldConfig } from "../ProPrismaWhereUnique/types";
 import type { PaginationFieldConfig } from "../ProPrismaPagination/types";
+import type { OmitFieldConfig } from "../ProPrismaOmit/types";
+import type { DistinctFieldConfig } from "../ProPrismaDistinct/types";
 
 export interface DmmfField {
   name: string;
@@ -293,4 +295,42 @@ export function dmmfToPaginationFields(
     name: f.name,
     label: f.label,
   }));
+}
+
+export function dmmfToOmitFields(
+  document: DmmfDocument,
+  modelName: string,
+): OmitFieldConfig[] {
+  const model = document.datamodel.models.find((m) => m.name === modelName);
+  if (!model) throw new Error(`Model "${modelName}" not found in DMMF document`);
+
+  const result: OmitFieldConfig[] = [];
+  for (const field of model.fields) {
+    if (field.isReadOnly) continue;
+    if (field.kind === "object") continue;
+    result.push({
+      name: field.name,
+      label: prettify(field.name),
+    });
+  }
+  return result;
+}
+
+export function dmmfToDistinctFields(
+  document: DmmfDocument,
+  modelName: string,
+): DistinctFieldConfig[] {
+  const model = document.datamodel.models.find((m) => m.name === modelName);
+  if (!model) throw new Error(`Model "${modelName}" not found in DMMF document`);
+
+  const result: DistinctFieldConfig[] = [];
+  for (const field of model.fields) {
+    if (field.isReadOnly) continue;
+    if (field.kind === "object") continue;
+    result.push({
+      name: field.name,
+      label: prettify(field.name),
+    });
+  }
+  return result;
 }
