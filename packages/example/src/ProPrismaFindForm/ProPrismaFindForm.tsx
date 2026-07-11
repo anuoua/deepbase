@@ -34,10 +34,7 @@ export function ProPrismaFindForm({ fields, value, onChange }: ProPrismaFindForm
       <div style={{ marginBottom: 16 }}>
         <Radio.Group
           value={value.method}
-          onChange={(e) => {
-            const method = e.target.value as FindMethod;
-            onChange({ ...emptyFindFormValue(method), method });
-          }}
+          onChange={(e) => onChange(emptyFindFormValue(e.target.value as FindMethod))}
         >
           <Radio.Button value="findUnique">findUnique</Radio.Button>
           <Radio.Button value="findFirst">findFirst</Radio.Button>
