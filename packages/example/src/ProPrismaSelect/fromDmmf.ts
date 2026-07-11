@@ -3,6 +3,8 @@ import type { FieldConfig, FieldType } from "../ProPrismaWhere/types";
 import type { OrderByFieldConfig } from "../ProPrismaOrderBy/types";
 import type { CreateFieldConfig } from "../ProPrismaCreateData/types";
 import type { IncludeFieldConfig } from "../ProPrismaInclude/types";
+import type { UniqueFieldConfig } from "../ProPrismaWhereUnique/types";
+import type { PaginationFieldConfig } from "../ProPrismaPagination/types";
 
 export interface DmmfField {
   name: string;
@@ -11,6 +13,8 @@ export interface DmmfField {
   isRequired: boolean;
   isList: boolean;
   isReadOnly: boolean;
+  isId?: boolean;
+  isUnique?: boolean;
   relationName?: string;
 }
 
@@ -255,4 +259,38 @@ export function dmmfToIncludeFields(
   }
 
   return result;
+}
+
+export function dmmfToUniqueFields(
+  document: DmmfDocument,
+  modelName: string,
+): UniqueFieldConfig[] {
+  const model = document.datamodel.models.find((m) => m.name === modelName);
+  if (!model) throw new Error(`Model "${modelName}" not found in DMMF document`);
+
+  const result: UniqueFieldConfig[] = [];
+  for (const field of model.fields) {
+    if (field.isReadOnly) continue;
+    if (field.kind !== "scalar" && field.kind !== "enum") continue;
+    const isUnique = field.isId || field.isUnique;
+    if (!isUnique) continue;
+
+    const fieldType = dmmfTypeToFieldType(field.type);
+    result.push({
+      name: field.name,
+      label: prettify(field.name),
+      type: fieldType === "number" ? "number" : "string",
+    });
+  }
+  return result;
+}
+
+export function dmmfToPaginationFields(
+  document: DmmfDocument,
+  modelName: string,
+): PaginationFieldConfig[] {
+  return dmmfToUniqueFields(document, modelName).map((f) => ({
+    name: f.name,
+    label: f.label,
+  }));
 }
