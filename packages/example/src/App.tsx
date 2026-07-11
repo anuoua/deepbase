@@ -4,6 +4,7 @@ import { ProPrismaWhereDemo } from "./ProPrismaWhere/Demo";
 import { ProPrismaSelectDemo } from "./ProPrismaSelect/Demo";
 import { ProPrismaOrderByDemo } from "./ProPrismaOrderBy/Demo";
 import { ProPrismaCreateDataDemo } from "./ProPrismaCreateData/Demo";
+import { ProPrismaCreateDemo } from "./ProPrismaCreate/Demo";
 import { ProPrismaUpdateDataDemo } from "./ProPrismaUpdateData/Demo";
 import { ProPrismaIncludeDemo } from "./ProPrismaInclude/Demo";
 import { ProPrismaPaginationDemo } from "./ProPrismaPagination/Demo";
@@ -17,7 +18,8 @@ import { ProPrismaGroupByDemo } from "./ProPrismaGroupBy/Demo";
 const { Sider, Content } = Layout;
 
 const items = [
-  { key: "create", label: "Create Data", render: () => <ProPrismaCreateDataDemo /> },
+  { key: "create", label: "create()", render: () => <ProPrismaCreateDemo /> },
+  { key: "createData", label: "Create Data", render: () => <ProPrismaCreateDataDemo /> },
   { key: "update", label: "Update Data", render: () => <ProPrismaUpdateDataDemo /> },
   { key: "upsert", label: "Upsert", render: () => <ProPrismaUpsertDemo /> },
   { key: "where", label: "Where", render: () => <ProPrismaWhereDemo /> },
