@@ -105,6 +105,7 @@ export function dmmfToWhereFields(
         name: field.name,
         label: prettify(field.name),
         type: dmmfTypeToFieldType(field.type),
+        isRequired: field.isRequired,
         ...(field.isList ? { isList: true } : {}),
       });
     }

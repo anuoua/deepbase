@@ -6,6 +6,7 @@ export interface FieldConfig {
   type?: FieldType;
   enums?: { label: string; value: string | number }[];
   isList?: boolean;
+  isRequired?: boolean;
   children?: FieldConfig[] | (() => FieldConfig[]);
 }
 
@@ -26,7 +27,7 @@ export interface WhereCondition {
 }
 
 export interface WhereGroup {
-  type: "AND" | "OR";
+  type: "AND" | "OR" | "NOT";
   children: (WhereCondition | WhereGroup)[];
 }
 
@@ -128,8 +129,11 @@ export const SCALAR_LIST_OPERATORS: { label: string; value: string }[] = [
   { label: "hasEvery", value: "hasEvery" },
   { label: "hasSome", value: "hasSome" },
   { label: "isEmpty", value: "isEmpty" },
-  { label: "isSet", value: "isSet" },
   { label: "equals", value: "equals" },
+];
+
+export const OPTIONAL_SCALAR_OPERATORS: { label: string; value: string }[] = [
+  { label: "isSet", value: "isSet" },
 ];
 
 const RELATION_OPERATORS = new Set(["some", "every", "none", "is", "isNot"]);
@@ -149,20 +153,30 @@ export function getOperatorsByType(field: FieldConfig): { label: string; value: 
   if (isScalarList(field)) {
     return SCALAR_LIST_OPERATORS;
   }
+  let ops: { label: string; value: string }[];
   switch (field.type) {
     case "string":
-      return STRING_OPERATORS;
+      ops = STRING_OPERATORS;
+      break;
     case "number":
-      return NUMBER_OPERATORS;
+      ops = NUMBER_OPERATORS;
+      break;
     case "boolean":
-      return BOOLEAN_OPERATORS;
+      ops = BOOLEAN_OPERATORS;
+      break;
     case "date":
-      return DATE_OPERATORS;
+      ops = DATE_OPERATORS;
+      break;
     case "enum":
-      return ENUM_OPERATORS;
+      ops = ENUM_OPERATORS;
+      break;
     default:
-      return STRING_OPERATORS;
+      ops = STRING_OPERATORS;
   }
+  if (field.isRequired === false) {
+    ops = [...ops, ...OPTIONAL_SCALAR_OPERATORS];
+  }
+  return ops;
 }
 
 export function getDefaultOperator(field: FieldConfig): string {
@@ -204,8 +218,12 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
       .map((child) => nodeToPrisma(child, fields))
       .filter((c): c is Record<string, unknown> => Object.keys(c).length > 0);
     if (conditions.length === 0) return {};
+    if (node.type === "NOT") {
+      if (conditions.length === 1) return { NOT: conditions[0]! };
+      return { NOT: conditions };
+    }
     if (conditions.length === 1) return conditions[0]!;
-    return { [node.type === "AND" ? "AND" : "OR"]: conditions };
+    return { [node.type]: conditions };
   }
 
   const fieldConfig = fields.find((f) => f.name === node.field);
@@ -222,11 +240,24 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
   }
 
   const value = node.value;
-  if (value === undefined || value === null || value === "") return {};
+  if (value === undefined || value === "") return {};
+
+  // isSet operator: boolean value
+  if (node.operator === "isSet") {
+    return { [node.field]: { isSet: Boolean(value) } };
+  }
+
+  // null is a valid filter value for equals/not operators
+  if (value === null) {
+    if (node.operator === "equals" || node.operator === "not") {
+      return { [node.field]: { [node.operator]: null } };
+    }
+    return {};
+  }
 
   if (isScalarList(fieldConfig)) {
-    if (node.operator === "isEmpty" || node.operator === "isSet") {
-      return { [node.field]: { [node.operator]: Boolean(value) } };
+    if (node.operator === "isEmpty") {
+      return { [node.field]: { isEmpty: Boolean(value) } };
     }
     if (node.operator === "equals") {
       if (!Array.isArray(value) || value.length === 0) return {};

@@ -30,7 +30,7 @@ function createEmptyCondition(fields: FieldConfig[]): WhereCondition {
   };
 }
 
-function createEmptyGroup(type: "AND" | "OR" = "AND"): WhereGroup {
+function createEmptyGroup(type: WhereGroup["type"] = "AND"): WhereGroup {
   return { type, children: [createEmptyCondition([])] };
 }
 
@@ -85,7 +85,8 @@ interface WhereGroupEditorProps {
 
 function WhereGroupEditor({ depth, fields, group, onChange, provider }: WhereGroupEditorProps) {
   const toggleType = useCallback(() => {
-    onChange({ ...group, type: group.type === "AND" ? "OR" : "AND" });
+    const next = group.type === "AND" ? "OR" : group.type === "OR" ? "NOT" : "AND";
+    onChange({ ...group, type: next });
   }, [group, onChange]);
 
   const updateChild = useCallback(
@@ -141,7 +142,7 @@ function WhereGroupEditor({ depth, fields, group, onChange, provider }: WhereGro
         }}
       >
         <Tag
-          color={group.type === "AND" ? "blue" : "green"}
+          color={group.type === "AND" ? "blue" : group.type === "OR" ? "green" : "red"}
           style={{ cursor: "pointer", fontWeight: 600 }}
           onClick={toggleType}
         >
