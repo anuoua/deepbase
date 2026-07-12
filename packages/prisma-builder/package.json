@@ -1,8 +1,8 @@
 {
-  "name": "@pro-hooks/example",
+  "name": "@pro-hooks/prisma-builder",
   "version": "0.0.1",
   "private": true,
-  "description": "Ant Design integration for pro-hooks",
+  "description": "Prisma query form builder for Ant Design",
   "type": "module",
   "exports": {
     "./ProForm": {
@@ -29,7 +29,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anuoua/pro-hooks.git",
-    "directory": "packages/antd"
+    "directory": "packages/prisma-builder"
   },
   "peerDependencies": {
     "antd": ">=5",
