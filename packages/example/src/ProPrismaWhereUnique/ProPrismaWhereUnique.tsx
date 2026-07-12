@@ -1,5 +1,10 @@
 import { Input, InputNumber, Select } from "antd";
 import { useCallback, useMemo } from "react";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
+import {
+  isPlaceholderValue,
+  markPlaceholder,
+} from "../ProPrismaPlaceholder/utils";
 import {
   toPrismaWhereUnique,
   type UniqueFieldConfig,
@@ -75,26 +80,40 @@ export function ProPrismaWhereUnique({
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <label style={{ fontSize: 12, color: "#666" }}>value</label>
-          {fieldConfig?.type === "number" ? (
-            <InputNumber
-              placeholder="Value"
-              style={{ minWidth: 200 }}
-              value={
-                value.value !== undefined && value.value !== null
-                  ? Number(value.value)
-                  : null
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            {fieldConfig?.type === "number" ? (
+              <InputNumber
+                placeholder="Value"
+                style={{ minWidth: 200 }}
+                value={
+                  isPlaceholderValue(value.value)
+                    ? null
+                    : value.value !== undefined && value.value !== null
+                      ? Number(value.value)
+                      : null
+                }
+                onChange={handleValueChange}
+              />
+            ) : (
+              <Input
+                allowClear
+                placeholder="Value"
+                style={{ minWidth: 200 }}
+                value={
+                  isPlaceholderValue(value.value)
+                    ? undefined
+                    : (value.value as string) ?? ""
+                }
+                onChange={handleStringValueChange}
+              />
+            )}
+            <ProPrismaPlaceholder
+              enabled={isPlaceholderValue(value.value)}
+              onChange={(p) =>
+                onChange({ ...value, value: p ? markPlaceholder() : undefined })
               }
-              onChange={handleValueChange}
             />
-          ) : (
-            <Input
-              allowClear
-              placeholder="Value"
-              style={{ minWidth: 200 }}
-              value={(value.value as string) ?? ""}
-              onChange={handleStringValueChange}
-            />
-          )}
+          </div>
         </div>
       </div>
 

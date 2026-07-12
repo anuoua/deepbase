@@ -8,6 +8,7 @@ export {
   isToMany,
 } from "../ProPrismaCreateData/types";
 
+import { toPlaceholderAwareValue } from "../ProPrismaPlaceholder/utils";
 import type { CreateFieldConfig } from "../ProPrismaCreateData/types";
 import {
   resolveChildren,
@@ -42,14 +43,9 @@ export function toPrismaUpdateData(
             addCreate(toPrismaUpdateData(data, resolveChildren(field)));
           }
         } else {
-          const items = r.items as Record<string, unknown>[];
-          if (Array.isArray(items) && items.length > 0) {
-            const creates = items
-              .map((item) => toPrismaUpdateData(item, resolveChildren(field)))
-              .filter((o) => Object.keys(o).length > 0);
-            if (creates.length > 0) {
-              result[field.name] = { create: creates };
-            }
+          const processed = toPrismaUpdateData((r.__item__ ?? {}) as Record<string, unknown>, resolveChildren(field));
+          if (Object.keys(processed).length > 0) {
+            result[field.name] = { create: { __iter__: true, __item__: processed } };
           }
         }
       } else if (mode === "connect") {
@@ -256,7 +252,7 @@ export function toPrismaUpdateData(
           result[field.name] = { [r._atomic]: numVal };
         }
       } else {
-        result[field.name] = val;
+        result[field.name] = toPlaceholderAwareValue(val);
       }
     }
   }

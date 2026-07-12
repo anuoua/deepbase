@@ -1,3 +1,5 @@
+import { isPlaceholderValue, PLACEHOLDER_SENTINEL } from "../ProPrismaPlaceholder/utils";
+
 export interface IncludeFieldConfig {
   name: string;
   label: string;
@@ -42,16 +44,24 @@ export function toPrismaInclude(
       const opts = val as IncludeRelationOptions;
       const nested: Record<string, unknown> = {};
 
-      if (opts.where && Object.keys(opts.where).length > 0) {
+      if (isPlaceholderValue(opts.where)) {
+        nested.where = PLACEHOLDER_SENTINEL;
+      } else if (opts.where && Object.keys(opts.where).length > 0) {
         nested.where = opts.where;
       }
-      if (opts.orderBy && Array.isArray(opts.orderBy) && opts.orderBy.length > 0) {
+      if (isPlaceholderValue(opts.orderBy)) {
+        nested.orderBy = PLACEHOLDER_SENTINEL;
+      } else if (opts.orderBy && Array.isArray(opts.orderBy) && opts.orderBy.length > 0) {
         nested.orderBy = opts.orderBy;
       }
-      if (opts.take !== undefined && opts.take !== null) {
+      if (isPlaceholderValue(opts.take)) {
+        nested.take = PLACEHOLDER_SENTINEL;
+      } else if (opts.take !== undefined && opts.take !== null) {
         nested.take = opts.take;
       }
-      if (opts.skip !== undefined && opts.skip !== null) {
+      if (isPlaceholderValue(opts.skip)) {
+        nested.skip = PLACEHOLDER_SENTINEL;
+      } else if (opts.skip !== undefined && opts.skip !== null) {
         nested.skip = opts.skip;
       }
       if (opts.include) {

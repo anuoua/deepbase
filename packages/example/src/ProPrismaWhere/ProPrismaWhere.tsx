@@ -13,6 +13,8 @@ import {
   isRelationOperator,
   toPrismaWhere,
 } from "./types";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
+import { isPlaceholderValue, markPlaceholder } from "../ProPrismaPlaceholder/utils";
 
 interface ProPrismaWhereProps {
   fields: FieldConfig[];
@@ -303,8 +305,14 @@ function WhereConditionEditor({
           <ValueInput
             fieldConfig={fieldConfig}
             operator={condition.operator}
-            value={condition.value}
+            value={isPlaceholderValue(condition.value) ? null : condition.value}
             onChange={handleValueChange}
+          />
+        )}
+        {fieldConfig && !isRelationCond && (
+          <ProPrismaPlaceholder
+            enabled={isPlaceholderValue(condition.value)}
+            onChange={(p) => handleValueChange(p ? markPlaceholder() : null)}
           />
         )}
 

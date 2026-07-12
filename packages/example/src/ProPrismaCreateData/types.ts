@@ -1,3 +1,5 @@
+import { toPlaceholderAwareValue, PLACEHOLDER_SENTINEL, isPlaceholderValue } from "../ProPrismaPlaceholder/utils";
+
 export interface CreateFieldConfig {
   name: string;
   label: string;
@@ -41,6 +43,11 @@ export function toPrismaCreateData(
   for (const field of fields) {
     const val = value[field.name];
     if (val === undefined || val === null) continue;
+
+    if (isPlaceholderValue(val)) {
+      result[field.name] = PLACEHOLDER_SENTINEL;
+      continue;
+    }
 
     if (isRelation(field)) {
       const r = val as Record<string, unknown>;
@@ -104,14 +111,9 @@ export function toPrismaCreateData(
             }
           }
         } else {
-          const items = r.items as Record<string, unknown>[];
-          if (Array.isArray(items) && items.length > 0) {
-            const creates = items
-              .map((item) => toPrismaCreateData(item, resolveChildren(field)))
-              .filter((o) => Object.keys(o).length > 0);
-            if (creates.length > 0) {
-              result[field.name] = { create: creates };
-            }
+          const processed = toPrismaCreateData((r.__item__ ?? {}) as Record<string, unknown>, resolveChildren(field));
+          if (Object.keys(processed).length > 0) {
+            result[field.name] = { create: { __iter__: true, __item__: processed } };
           }
         }
       }
@@ -120,7 +122,7 @@ export function toPrismaCreateData(
         result[field.name] = val;
       }
     } else {
-      result[field.name] = val;
+      result[field.name] = toPlaceholderAwareValue(val);
     }
   }
   return result;

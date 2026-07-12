@@ -9,6 +9,8 @@ import {
   type IncludeRelationOptions,
   type IncludeValue,
 } from "./types";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
+import { isPlaceholderValue, markPlaceholder } from "../ProPrismaPlaceholder/utils";
 
 interface ProPrismaIncludeProps {
   fields: IncludeFieldConfig[];
@@ -165,79 +167,95 @@ export function ProPrismaInclude({ fields, value, onChange }: ProPrismaIncludePr
                   label: `${fieldConfig.label} options`,
                   children: (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div>
-                        <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>
-                          where (JSON)
-                        </label>
-                        <Input.TextArea
-                          rows={2}
-                          placeholder='{ "published": true }'
-                          value={opts.where ? JSON.stringify(opts.where) : ""}
-                          onChange={(e) => {
-                            try {
-                              const parsed = e.target.value.trim()
-                                ? JSON.parse(e.target.value)
-                                : undefined;
-                              updateRelationOptions(fieldName, (o) => {
-                                if (parsed) o.where = parsed;
-                                else delete o.where;
-                              });
-                            } catch {
-                              /* ignore parse errors */
-                            }
-                          }}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>where (JSON)</label>
+                          <Input.TextArea
+                            rows={2}
+                            placeholder={isPlaceholderValue(opts.where) ? "Runtime value" : '{ "published": true }'}
+                            value={isPlaceholderValue(opts.where) ? "" : (opts.where ? JSON.stringify(opts.where) : "")}
+                            onChange={(e) => {
+                              try {
+                                const parsed = e.target.value.trim() ? JSON.parse(e.target.value) : undefined;
+                                updateRelationOptions(fieldName, (o) => {
+                                  if (parsed) o.where = parsed;
+                                  else delete o.where;
+                                });
+                              } catch { /* ignore */ }
+                            }}
+                          />
+                        </div>
+                        <ProPrismaPlaceholder
+                          enabled={isPlaceholderValue(opts.where)}
+                          onChange={(p) => updateRelationOptions(fieldName, (o) => {
+                            if (p) o.where = markPlaceholder() as Record<string, unknown>;
+                            else delete o.where;
+                          })}
                         />
                       </div>
-                      <div>
-                        <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>
-                          orderBy (JSON)
-                        </label>
-                        <Input.TextArea
-                          rows={2}
-                          placeholder='[{ "createdAt": "desc" }]'
-                          value={opts.orderBy ? JSON.stringify(opts.orderBy) : ""}
-                          onChange={(e) => {
-                            try {
-                              const parsed = e.target.value.trim()
-                                ? JSON.parse(e.target.value)
-                                : undefined;
-                              updateRelationOptions(fieldName, (o) => {
-                                if (parsed) o.orderBy = parsed;
-                                else delete o.orderBy;
-                              });
-                            } catch {
-                              /* ignore parse errors */
-                            }
-                          }}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>orderBy (JSON)</label>
+                          <Input.TextArea
+                            rows={2}
+                            placeholder={isPlaceholderValue(opts.orderBy) ? "Runtime value" : '[{ "createdAt": "desc" }]'}
+                            value={isPlaceholderValue(opts.orderBy) ? "" : (opts.orderBy ? JSON.stringify(opts.orderBy) : "")}
+                            onChange={(e) => {
+                              try {
+                                const parsed = e.target.value.trim() ? JSON.parse(e.target.value) : undefined;
+                                updateRelationOptions(fieldName, (o) => {
+                                  if (parsed) o.orderBy = parsed;
+                                  else delete o.orderBy;
+                                });
+                              } catch { /* ignore */ }
+                            }}
+                          />
+                        </div>
+                        <ProPrismaPlaceholder
+                          enabled={isPlaceholderValue(opts.orderBy)}
+                          onChange={(p) => updateRelationOptions(fieldName, (o) => {
+                            if (p) o.orderBy = markPlaceholder() as unknown as Record<string, unknown>[];
+                            else delete o.orderBy;
+                          })}
                         />
                       </div>
                       <div style={{ display: "flex", gap: 16 }}>
-                        <div>
-                          <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>
-                            take
-                          </label>
-                          <InputNumber
-                            value={opts.take ?? null}
-                            onChange={(v) =>
-                              updateRelationOptions(fieldName, (o) => {
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div>
+                            <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>take</label>
+                            <InputNumber
+                              value={isPlaceholderValue(opts.take) ? null : (opts.take ?? null)}
+                              onChange={(v) => updateRelationOptions(fieldName, (o) => {
                                 if (v != null) o.take = v;
                                 else delete o.take;
-                              })
-                            }
+                              })}
+                            />
+                          </div>
+                          <ProPrismaPlaceholder
+                            enabled={isPlaceholderValue(opts.take)}
+                            onChange={(p) => updateRelationOptions(fieldName, (o) => {
+                              if (p) o.take = markPlaceholder() as unknown as number;
+                              else delete o.take;
+                            })}
                           />
                         </div>
-                        <div>
-                          <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>
-                            skip
-                          </label>
-                          <InputNumber
-                            value={opts.skip ?? null}
-                            onChange={(v) =>
-                              updateRelationOptions(fieldName, (o) => {
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div>
+                            <label style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#666" }}>skip</label>
+                            <InputNumber
+                              value={isPlaceholderValue(opts.skip) ? null : (opts.skip ?? null)}
+                              onChange={(v) => updateRelationOptions(fieldName, (o) => {
                                 if (v != null) o.skip = v;
                                 else delete o.skip;
-                              })
-                            }
+                              })}
+                            />
+                          </div>
+                          <ProPrismaPlaceholder
+                            enabled={isPlaceholderValue(opts.skip)}
+                            onChange={(p) => updateRelationOptions(fieldName, (o) => {
+                              if (p) o.skip = markPlaceholder() as unknown as number;
+                              else delete o.skip;
+                            })}
                           />
                         </div>
                       </div>

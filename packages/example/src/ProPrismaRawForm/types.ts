@@ -1,10 +1,12 @@
+import { isPlaceholderValue, PLACEHOLDER_SENTINEL } from "../ProPrismaPlaceholder/utils";
+
 export type RawMethod = "findRaw" | "aggregateRaw";
 
 export interface RawFormValue {
   method: RawMethod;
-  filter: string;
-  pipeline: string;
-  options: string;
+  filter: unknown;
+  pipeline: unknown;
+  options: unknown;
 }
 
 export function emptyRawFormValue(method: RawMethod = "findRaw"): RawFormValue {
@@ -16,32 +18,27 @@ export function emptyRawFormValue(method: RawMethod = "findRaw"): RawFormValue {
   };
 }
 
+function processField(field: unknown): unknown {
+  if (isPlaceholderValue(field)) return PLACEHOLDER_SENTINEL;
+  if (typeof field !== "string") return field;
+  try { return JSON.parse(field); }
+  catch { return field; }
+}
+
 export function toPrismaRawForm(value: RawFormValue): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   if (value.method === "findRaw") {
-    try {
-      const filter = JSON.parse(value.filter);
-      result.filter = filter;
-    } catch {
-      result.filter = value.filter;
-    }
+    result.filter = processField(value.filter);
   } else {
-    try {
-      const pipeline = JSON.parse(value.pipeline);
-      result.pipeline = pipeline;
-    } catch {
-      result.pipeline = value.pipeline;
-    }
+    result.pipeline = processField(value.pipeline);
   }
 
-  try {
-    const options = JSON.parse(value.options);
+  const options = processField(value.options);
+  if (typeof options === "object" && options !== null && !Array.isArray(options) && !isPlaceholderValue(options)) {
     if (Object.keys(options).length > 0) {
       result.options = options;
     }
-  } catch {
-    // ignore malformed options
   }
 
   return result;

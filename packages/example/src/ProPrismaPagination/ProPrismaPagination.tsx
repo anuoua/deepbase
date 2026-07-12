@@ -5,6 +5,8 @@ import {
   type PaginationFieldConfig,
   type PaginationValue,
 } from "./types";
+import { isPlaceholderValue, markPlaceholder, toPlaceholderAwareValue } from "../ProPrismaPlaceholder/utils";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
 
 interface ProPrismaPaginationProps {
   fields: PaginationFieldConfig[];
@@ -100,16 +102,24 @@ export function ProPrismaPagination({
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <label style={{ fontSize: 12, color: "#666" }}>cursor value</label>
-          <InputNumber
-            placeholder="value"
-            style={{ minWidth: 150 }}
-            value={
-              value.cursorValue !== undefined && value.cursorValue !== null
-                ? Number(value.cursorValue)
-                : null
-            }
-            onChange={handleCursorValueChange}
-          />
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <InputNumber
+              placeholder="value"
+              style={{ minWidth: 150 }}
+              value={
+                value.cursorValue !== undefined && value.cursorValue !== null && !isPlaceholderValue(value.cursorValue)
+                  ? Number(value.cursorValue)
+                  : null
+              }
+              onChange={handleCursorValueChange}
+            />
+            <ProPrismaPlaceholder
+              enabled={isPlaceholderValue(value.cursorValue)}
+              onChange={(p) =>
+                onChange({ ...value, ...(p ? { cursorValue: markPlaceholder() } : {}) })
+              }
+            />
+          </div>
         </div>
       </div>
 

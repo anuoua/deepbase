@@ -3,11 +3,13 @@ export interface PaginationFieldConfig {
   label: string;
 }
 
+import { toPlaceholderAwareValue } from "../ProPrismaPlaceholder/utils";
+
 export interface PaginationValue {
   take?: number;
   skip?: number;
   cursorField?: string;
-  cursorValue?: string | number;
+  cursorValue?: string | number | Record<string, true>;
 }
 
 export function toPrismaPagination(
@@ -21,16 +23,14 @@ export function toPrismaPagination(
   if (value.skip !== undefined && value.skip !== null) {
     result.skip = value.skip;
   }
-  if (
-    value.cursorField &&
-    value.cursorValue !== undefined &&
-    value.cursorValue !== null &&
-    value.cursorValue !== ""
-  ) {
-    const numVal = Number(value.cursorValue);
-    result.cursor = {
-      [value.cursorField]: isNaN(numVal) ? value.cursorValue : numVal,
-    };
+  if (value.cursorField) {
+    const cv = toPlaceholderAwareValue(value.cursorValue);
+    if (cv !== undefined && cv !== null && cv !== "") {
+      const numVal = Number(cv);
+      result.cursor = {
+        [value.cursorField]: isNaN(numVal) ? cv : numVal,
+      };
+    }
   }
   return result;
 }

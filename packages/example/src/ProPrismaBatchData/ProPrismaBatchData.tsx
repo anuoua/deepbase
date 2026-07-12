@@ -1,5 +1,7 @@
 import { Button, Input, InputNumber, Select, Switch } from "antd";
 import type { BatchDataFieldConfig, BatchDataValue } from "./types";
+import { isPlaceholderValue, markPlaceholder } from "../ProPrismaPlaceholder/utils";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
 
 interface ProPrismaBatchDataProps {
   fields: BatchDataFieldConfig;
@@ -47,36 +49,60 @@ export function ProPrismaBatchData({ fields, value, onChange }: ProPrismaBatchDa
             <div key={field.name} style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: "#888", marginBottom: 2 }}>{field.label}</div>
               {field.type === "string" && (
-                <Input
-                  size="small"
-                  value={(row[field.name] as string) ?? ""}
-                  onChange={(e) => updateRow(rowIndex, field.name, e.target.value)}
-                />
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <Input
+                    size="small"
+                    value={isPlaceholderValue(row[field.name]) ? "" : (row[field.name] as string) ?? ""}
+                    onChange={(e) => updateRow(rowIndex, field.name, e.target.value)}
+                  />
+                  <ProPrismaPlaceholder
+                    enabled={isPlaceholderValue(row[field.name])}
+                    onChange={(p) => updateRow(rowIndex, field.name, p ? markPlaceholder() : null)}
+                  />
+                </div>
               )}
               {field.type === "number" && (
-                <InputNumber
-                  size="small"
-                  style={{ width: "100%" }}
-                  value={row[field.name] as number | null}
-                  onChange={(val) => updateRow(rowIndex, field.name, val)}
-                />
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <InputNumber
+                    size="small"
+                    style={{ width: "100%" }}
+                    value={isPlaceholderValue(row[field.name]) ? null : (row[field.name] as number | null)}
+                    onChange={(val) => updateRow(rowIndex, field.name, val)}
+                  />
+                  <ProPrismaPlaceholder
+                    enabled={isPlaceholderValue(row[field.name])}
+                    onChange={(p) => updateRow(rowIndex, field.name, p ? markPlaceholder() : null)}
+                  />
+                </div>
               )}
               {field.type === "boolean" && (
-                <Switch
-                  size="small"
-                  checked={!!row[field.name]}
-                  onChange={(val) => updateRow(rowIndex, field.name, val)}
-                />
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <Switch
+                    size="small"
+                    checked={isPlaceholderValue(row[field.name]) ? false : !!row[field.name]}
+                    onChange={(val) => updateRow(rowIndex, field.name, val)}
+                  />
+                  <ProPrismaPlaceholder
+                    enabled={isPlaceholderValue(row[field.name])}
+                    onChange={(p) => updateRow(rowIndex, field.name, p ? markPlaceholder() : null)}
+                  />
+                </div>
               )}
               {field.type === "enum" && field.enums && (
-                <Select
-                  size="small"
-                  style={{ width: "100%" }}
-                  value={(row[field.name] as string) ?? undefined}
-                  onChange={(val) => updateRow(rowIndex, field.name, val)}
-                  options={field.enums}
-                  allowClear
-                />
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <Select
+                    size="small"
+                    style={{ width: "100%" }}
+                    value={isPlaceholderValue(row[field.name]) ? undefined : (row[field.name] as string) ?? undefined}
+                    onChange={(val) => updateRow(rowIndex, field.name, val)}
+                    options={field.enums}
+                    allowClear
+                  />
+                  <ProPrismaPlaceholder
+                    enabled={isPlaceholderValue(row[field.name])}
+                    onChange={(p) => updateRow(rowIndex, field.name, p ? markPlaceholder() : null)}
+                  />
+                </div>
               )}
             </div>
           ))}

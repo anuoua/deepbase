@@ -10,12 +10,14 @@ export function emptyBatchDataValue(): BatchDataValue {
   return { rows: [] };
 }
 
+import { toPlaceholderAwareValue } from "../ProPrismaPlaceholder/utils";
+
 export function toPrismaBatchData(value: BatchDataValue): Record<string, unknown>[] {
   return value.rows.map((row) => {
     const cleaned: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(row)) {
       if (val !== null && val !== undefined && val !== "") {
-        cleaned[key] = val;
+        cleaned[key] = toPlaceholderAwareValue(val);
       }
     }
     return cleaned;

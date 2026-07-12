@@ -1,5 +1,7 @@
 import { Button, Checkbox, Input, InputNumber, Segmented, Select } from "antd";
 import { useCallback, useMemo } from "react";
+import { ProPrismaPlaceholder } from "../ProPrismaPlaceholder/ProPrismaPlaceholder";
+import { isPlaceholderValue, markPlaceholder, markIterable } from "../ProPrismaPlaceholder/utils";
 import {
   resolveChildren,
   hasChildren,
@@ -95,12 +97,18 @@ function UpdateFieldInput({
             />
           </>
         ) : (
-          <InputNumber
-            placeholder={`Enter ${field.label.toLowerCase()}`}
-            style={{ minWidth: 200, flex: 1 }}
-            value={(value as number) ?? null}
-            onChange={(v) => onChange(v)}
-          />
+          <>
+            <InputNumber
+              placeholder={`Enter ${field.label.toLowerCase()}`}
+              style={{ minWidth: 200, flex: 1 }}
+              value={isPlaceholderValue(value) ? null : (value as number) ?? null}
+              onChange={(v) => onChange(v)}
+            />
+            <ProPrismaPlaceholder
+              enabled={isPlaceholderValue(value)}
+              onChange={(p) => onChange(p ? markPlaceholder() : null)}
+            />
+          </>
         )}
       </div>
     );
@@ -109,47 +117,71 @@ function UpdateFieldInput({
   switch (field.type) {
     case "string":
       return (
-        <Input
-          allowClear
-          placeholder={`Enter ${field.label.toLowerCase()}`}
-          style={{ minWidth: 200, flex: 1 }}
-          value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+          <Input
+            allowClear
+            placeholder={`Enter ${field.label.toLowerCase()}`}
+            style={{ minWidth: 200, flex: 1 }}
+            value={isPlaceholderValue(value) ? "" : (value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value || null)}
+          />
+          <ProPrismaPlaceholder
+            enabled={isPlaceholderValue(value)}
+            onChange={(p) => onChange(p ? markPlaceholder() : null)}
+          />
+        </div>
       );
     case "boolean":
       return (
-        <Select
-          allowClear
-          options={[
-            { label: "true", value: true },
-            { label: "false", value: false },
-          ]}
-          placeholder="Select boolean"
-          style={{ minWidth: 120 }}
-          value={value !== undefined ? (value as boolean) : undefined}
-          onChange={onChange}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+          <Select
+            allowClear
+            options={[
+              { label: "true", value: true },
+              { label: "false", value: false },
+            ]}
+            placeholder="Select boolean"
+            style={{ minWidth: 120 }}
+            value={isPlaceholderValue(value) ? undefined : (value as boolean)}
+            onChange={onChange}
+          />
+          <ProPrismaPlaceholder
+            enabled={isPlaceholderValue(value)}
+            onChange={(p) => onChange(p ? markPlaceholder() : null)}
+          />
+        </div>
       );
     case "date":
       return (
-        <Input
-          allowClear
-          placeholder="Date (e.g. 2024-01-01T00:00:00.000Z)"
-          style={{ minWidth: 200, flex: 1 }}
-          value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+          <Input
+            allowClear
+            placeholder="Date (e.g. 2024-01-01T00:00:00.000Z)"
+            style={{ minWidth: 200, flex: 1 }}
+            value={isPlaceholderValue(value) ? "" : (value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value || null)}
+          />
+          <ProPrismaPlaceholder
+            enabled={isPlaceholderValue(value)}
+            onChange={(p) => onChange(p ? markPlaceholder() : null)}
+          />
+        </div>
       );
     default:
       return (
-        <Input
-          allowClear
-          placeholder={`Enter ${field.label.toLowerCase()}`}
-          style={{ minWidth: 200, flex: 1 }}
-          value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+          <Input
+            allowClear
+            placeholder={`Enter ${field.label.toLowerCase()}`}
+            style={{ minWidth: 200, flex: 1 }}
+            value={isPlaceholderValue(value) ? "" : (value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value || null)}
+          />
+          <ProPrismaPlaceholder
+            enabled={isPlaceholderValue(value)}
+            onChange={(p) => onChange(p ? markPlaceholder() : null)}
+          />
+        </div>
       );
   }
 }
@@ -193,7 +225,7 @@ function UpdateRelationEditor({
   const handleModeChange = useCallback(
     (newMode: string) => {
       if (newMode === "create") {
-        onChange({ mode: "create" });
+        onChange(toMany ? { mode: "create", ...markIterable({}) } : { mode: "create" });
       } else if (newMode === "connect") {
         onChange(toMany ? { mode: "connect", ids: [] } : { mode: "connect", id: undefined });
       } else if (newMode === "connectOrCreate") {
@@ -268,7 +300,6 @@ function UpdateRelationContent({
   switch (mode) {
     case "create": {
       const data = (r.data as Record<string, unknown>) ?? {};
-      const items = Array.isArray(r.items) ? (r.items as Record<string, unknown>[]) : [];
 
       if (!toMany) {
         return (
@@ -282,50 +313,23 @@ function UpdateRelationContent({
 
       return (
         <div>
-          {items.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                border: "1px solid #d9d9d9",
-                borderRadius: 6,
-                padding: 12,
-                marginBottom: 8,
-                position: "relative",
-              }}
-            >
-              <div style={{ marginBottom: 8, fontWeight: 500, color: "#666", fontSize: 12 }}>
-                Item {index + 1}
-              </div>
-              <UpdateFieldsForm
-                fields={fields}
-                value={item}
-                onChange={(v) => {
-                  const arr = [...items];
-                  arr[index] = v;
-                  onChange({ mode: "create", items: arr });
-                }}
-              />
-              <Button
-                danger
-                size="small"
-                type="text"
-                style={{ position: "absolute", top: 4, right: 4 }}
-                onClick={() => {
-                  const arr = items.filter((_, i) => i !== index);
-                  onChange({ mode: "create", items: arr });
-                }}
-              >
-                ✕
-              </Button>
-            </div>
-          ))}
-          <Button
-            size="small"
-            type="dashed"
-            onClick={() => onChange({ mode: "create", items: [...items, {}] })}
+          <div
+            style={{
+              border: "1px solid #b7eb8f",
+              borderRadius: 6,
+              padding: 12,
+              background: "#f6ffed",
+            }}
           >
-            + Add Item
-          </Button>
+            <div style={{ marginBottom: 8, fontSize: 12, color: "#52c41a", fontWeight: 500 }}>
+              Template item (each array element follows this shape)
+            </div>
+            <UpdateFieldsForm
+              fields={fields}
+              value={(r.__item__ as Record<string, unknown>) ?? {}}
+              onChange={(v) => onChange({ mode: "create", ...markIterable(v) })}
+            />
+          </div>
         </div>
       );
     }
@@ -857,7 +861,11 @@ function UpdateFieldsForm({
       const field = fields.find((f) => f.name === name);
       if (enabled) {
         if (field && isRelation(field)) {
-          onChange({ ...value, [name]: { mode: "create" } });
+          onChange(
+            field.isList === true
+              ? { ...value, [name]: { mode: "create", ...markIterable({}) } }
+              : { ...value, [name]: { mode: "create" } },
+          );
         } else {
           onChange({ ...value, [name]: null });
         }

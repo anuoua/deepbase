@@ -1,3 +1,5 @@
+import { toPlaceholderAwareValue, PLACEHOLDER_SENTINEL } from "../ProPrismaPlaceholder/utils";
+
 export interface UniqueFieldConfig {
   name: string;
   label: string;
@@ -6,7 +8,7 @@ export interface UniqueFieldConfig {
 
 export interface WhereUniqueValue {
   field: string;
-  value?: string | number;
+  value?: unknown;
 }
 
 export function toPrismaWhereUnique(
@@ -16,9 +18,15 @@ export function toPrismaWhereUnique(
   const fieldConfig = fields.find((f) => f.name === value.field);
   if (!fieldConfig) return {};
 
-  if (value.value === undefined || value.value === null || value.value === "") return {};
-  const numVal = Number(value.value);
-  return { [fieldConfig.name]: fieldConfig.type === "number" ? numVal : value.value };
+  const raw = value.value;
+  if (raw === undefined || raw === null || raw === "") return {};
+
+  const processed = toPlaceholderAwareValue(raw);
+  if (processed === PLACEHOLDER_SENTINEL) {
+    return { [fieldConfig.name]: processed };
+  }
+
+  return { [fieldConfig.name]: fieldConfig.type === "number" ? Number(processed) : processed };
 }
 
 export function emptyWhereUniqueValue(fields: UniqueFieldConfig[]): WhereUniqueValue {

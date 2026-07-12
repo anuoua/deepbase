@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProPrismaUpsert } from "./ProPrismaUpsert";
-import { emptyUpsertValue, type UpsertValue, type UpsertFieldConfig } from "./types";
+import { emptyUpsertValue, toPrismaUpsert, type UpsertValue, type UpsertFieldConfig } from "./types";
+import { mergePlaceholders } from "../ProPrismaPlaceholder/utils";
 import {
   dmmfToUniqueFields,
   dmmfToCreateFields,
@@ -22,8 +23,12 @@ const fields: UpsertFieldConfig = {
   omitFields: dmmfToOmitFields(dmmf, "User"),
 };
 
+const SAMPLE_EXTERNAL = { name: "Bob", email: "bob@test.com", role: "USER" };
+
 export const ProPrismaUpsertDemo = () => {
   const [upsert, setUpsert] = useState<UpsertValue>(emptyUpsertValue());
+  const rawOutput = useMemo(() => toPrismaUpsert(upsert, fields), [upsert]);
+  const mergedOutput = useMemo(() => mergePlaceholders(rawOutput, SAMPLE_EXTERNAL), [rawOutput]);
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -36,6 +41,13 @@ export const ProPrismaUpsertDemo = () => {
         value={upsert}
         onChange={setUpsert}
       />
+
+      <div style={{ marginTop: 16, padding: 12, background: "#fffbe6", borderRadius: 6, border: "1px solid #ffe58f" }}>
+        <div style={{ marginBottom: 8, fontWeight: 500, color: "#ad8b00" }}>Merged Output (with sample external data):</div>
+        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 13 }}>
+          {JSON.stringify(mergedOutput, null, 2)}
+        </pre>
+      </div>
     </div>
   );
 };

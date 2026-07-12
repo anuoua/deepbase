@@ -1,3 +1,5 @@
+import { isPlaceholderValue, PLACEHOLDER_SENTINEL } from "../ProPrismaPlaceholder/utils";
+
 export type FieldType = "string" | "number" | "boolean" | "date" | "enum" | "json";
 
 export interface FieldConfig {
@@ -259,9 +261,11 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
   const value = node.value;
   if (value === undefined || value === "") return {};
 
-  // isSet operator: boolean value
+  const isPH = isPlaceholderValue(value);
+
+  // isSet operator
   if (node.operator === "isSet") {
-    return { [node.field]: { isSet: Boolean(value) } };
+    return { [node.field]: { isSet: isPH ? PLACEHOLDER_SENTINEL : Boolean(value) } };
   }
 
   // null is a valid filter value for equals/not operators
@@ -272,12 +276,15 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
     return {};
   }
 
-  if (isScalarList(fieldConfig)) {
-    if (node.operator === "isEmpty") {
-      return { [node.field]: { isEmpty: Boolean(value) } };
-    }
-  // JSON path filters
+  // Scalar list: isEmpty
+  if (isScalarList(fieldConfig) && node.operator === "isEmpty") {
+    return { [node.field]: { isEmpty: isPH ? PLACEHOLDER_SENTINEL : Boolean(value) } };
+  }
+
+  // JSON path filters (compound objects — skip placeholder since the UI
+  // doesn't support marking sub-fields individually)
   if (node.operator === "path_equals") {
+    if (isPH) return {};
     const v = value as { path?: string[]; equals?: unknown };
     if (v && Array.isArray(v.path) && v.equals !== undefined) {
       return { [node.field]: { path: v.path, equals: v.equals } };
@@ -285,6 +292,7 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
     return {};
   }
   if (node.operator === "string_contains") {
+    if (isPH) return {};
     const v = value as { path?: string[]; string_contains?: string };
     if (v && Array.isArray(v.path) && typeof v.string_contains === "string") {
       return { [node.field]: { path: v.path, string_contains: v.string_contains } };
@@ -294,28 +302,31 @@ function nodeToPrisma(node: WhereNode, fields: FieldConfig[]): Record<string, un
 
   // Full-text search
   if (node.operator === "search") {
-    return { [node.field]: { search: value } };
+    return { [node.field]: { search: isPH ? PLACEHOLDER_SENTINEL : value } };
   }
 
-  if (node.operator === "equals") {
-      if (!Array.isArray(value) || value.length === 0) return {};
-      return { [node.field]: { equals: value } };
-    }
+  // Scalar list equals (array-based)
+  if (isScalarList(fieldConfig) && node.operator === "equals") {
+    if (!isPH && (!Array.isArray(value) || value.length === 0)) return {};
+    return { [node.field]: { equals: isPH ? PLACEHOLDER_SENTINEL : value } };
   }
 
+  // equals shorthand
   if (node.operator === "equals") {
     if (node.mode === "insensitive") {
-      return { [node.field]: { equals: value, mode: "insensitive" } };
+      return { [node.field]: { equals: isPH ? PLACEHOLDER_SENTINEL : value, mode: "insensitive" } };
     }
-    return { [node.field]: value };
+    return { [node.field]: isPH ? PLACEHOLDER_SENTINEL : value };
   }
 
+  // in / notIn / hasEvery / hasSome (array-based)
   if (canBeMultipleValue(node.operator)) {
-    if (!Array.isArray(value) || value.length === 0) return {};
-    return { [node.field]: { [node.operator]: value } };
+    if (!isPH && (!Array.isArray(value) || value.length === 0)) return {};
+    return { [node.field]: { [node.operator]: isPH ? PLACEHOLDER_SENTINEL : value } };
   }
 
-  const result: Record<string, unknown> = { [node.operator]: value };
+  // Default: wrap with operator key
+  const result: Record<string, unknown> = { [node.operator]: isPH ? PLACEHOLDER_SENTINEL : value };
   if (node.mode === "insensitive") {
     result.mode = "insensitive";
   }
