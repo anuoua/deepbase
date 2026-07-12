@@ -97,9 +97,23 @@ export function ProPrismaInclude({ fields, value, onChange }: ProPrismaIncludePr
   }, []);
 
   const checkedKeys = useMemo(() => {
-    return Object.entries(value)
-      .filter(([, v]) => v === true || typeof v === "object")
-      .map(([k]) => k);
+    const keys: string[] = [];
+    function walk(obj: IncludeValue, prefix: string) {
+      for (const [k, v] of Object.entries(obj)) {
+        const path = prefix ? `${prefix}.${k}` : k;
+        if (v === true) {
+          keys.push(path);
+        } else if (v && typeof v === "object" && !Array.isArray(v)) {
+          keys.push(path);
+          const opts = v as IncludeRelationOptions;
+          if (opts.include) {
+            walk(opts.include, path);
+          }
+        }
+      }
+    }
+    walk(value, "");
+    return keys;
   }, [value]);
 
   const result = useMemo(() => toPrismaInclude(value, fields), [value, fields]);
@@ -112,11 +126,52 @@ export function ProPrismaInclude({ fields, value, onChange }: ProPrismaIncludePr
     ) => {
       const keys = (Array.isArray(checked) ? checked : checked.checked) as string[];
       const newValue: IncludeValue = {};
+
       for (const field of fields.filter(hasChildren)) {
-        if (keys.includes(field.name)) {
-          newValue[field.name] = value[field.name] ?? true;
+        const dot = `${field.name}.`;
+        const matched = keys.filter((k) => k === field.name || k.startsWith(dot));
+        if (matched.length === 0) continue;
+
+        const nestedPaths = matched
+          .filter((k) => k.startsWith(dot))
+          .map((k) => k.slice(dot.length));
+
+        const existing = value[field.name];
+        const hasOptions = typeof existing === "object" && existing !== null && !Array.isArray(existing);
+
+        if (nestedPaths.length === 0) {
+          if (hasOptions) {
+            const { include: _, ...opts } = existing as IncludeRelationOptions;
+            newValue[field.name] = Object.keys(opts).length > 0 ? opts : true;
+          } else {
+            newValue[field.name] = true;
+          }
+        } else {
+          const nestedInclude: IncludeValue = {};
+          for (const path of nestedPaths) {
+            const parts = path.split(".");
+            let target = nestedInclude;
+            for (let i = 0; i < parts.length; i++) {
+              const part = parts[i]!;
+              if (i === parts.length - 1) {
+                target[part] = true;
+              } else {
+                if (!target[part] || typeof target[part] !== "object") {
+                  target[part] = { include: {} };
+                }
+                target = (target[part] as IncludeRelationOptions).include!;
+              }
+            }
+          }
+
+          if (hasOptions) {
+            newValue[field.name] = { ...(existing as IncludeRelationOptions), include: nestedInclude };
+          } else {
+            newValue[field.name] = { include: nestedInclude };
+          }
         }
       }
+
       onChange(newValue);
     },
     [fields, value, onChange],
