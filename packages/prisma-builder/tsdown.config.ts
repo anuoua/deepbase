@@ -1,6 +1,8 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["./src/ProForm/index.ts", "./src/ProSelect/index.ts"],
-  tsconfig: "./tsconfig.build.json",
+  entry: ["./src/index.ts"],
+  format: ["esm"],
+  dts: true,
+  clean: true,
 });

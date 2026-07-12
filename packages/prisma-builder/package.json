@@ -4,20 +4,16 @@
   "private": true,
   "description": "Prisma query form builder for Ant Design",
   "type": "module",
-  "exports": {
-    "./ProForm": {
-      "types": "./dist/ProForm/index.d.mts",
-      "import": "./dist/ProForm/index.mjs"
-    },
-    "./ProSelect": {
-      "types": "./dist/ProSelect/index.d.mts",
-      "import": "./dist/ProSelect/index.mjs"
-    }
-  },
   "files": [
     "dist"
   ],
   "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
   "scripts": {
     "test": "vitest --run --passWithNoTests",
     "build": "tsdown",
